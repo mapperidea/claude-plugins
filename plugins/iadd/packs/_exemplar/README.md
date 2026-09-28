@@ -36,7 +36,7 @@ generators/struct.mi         o microscópio — despeja o DOM normalizado em XML
 ```sh
 cd plugins/iadd/packs/_exemplar
 mi init exemplar main.mi          # uma vez — cria/vincula o projeto na sua conta
-mi push exemplar                  # valida (é o ÚNICO validador real)
+mi push exemplar                  # envia para a nuvem — não valida
 
 # olhe o DOM antes de mexer em qualquer gerador
 mi generate exemplar struct xml className=Pedido packageName=com.exemplo.dominio > /tmp/pedido.xml

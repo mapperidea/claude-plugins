@@ -59,7 +59,7 @@ errado ali produz um projeto que sobe sem os geradores e sem o dicionário de ti
 O `.mi` gerado é uma hipótese até o CLI dizer o contrário:
 
 ```sh
-mi push <projeto>                                                  # o único validador real
+mi push <projeto>                                                  # envia; não valida
 mi generate <projeto> struct xml className=<C> packageName=<p>     # confira o @mode no DOM
 ```
 

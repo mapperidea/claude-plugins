@@ -150,12 +150,23 @@ delega ao agente certo. A separação existe para que quem modela não gere, e q
 
 ```sh
 cd mi/ && mi init <projeto> main.mi      # uma vez: vincula o projeto à pasta do mapa principal
-mi push <projeto>                        # a cada alteração de qualquer .mi — é a validação real
+mi push <projeto>                        # a cada alteração de qualquer .mi — envia, não valida
 mi generate <projeto> <grupo> <sub> modelName=<Classe> package=<pacote> > <destino>
 ```
 
-`mi push` é o único juiz: um mapa que "parece certo" e não passa no `push` não está certo. Os agentes
-sabem disso e rodam o `push` antes de declarar qualquer coisa pronta.
+O `push` só leva os mapas para a nuvem; é lá que tudo acontece, então ele vem antes de qualquer outro
+comando. **Quem valida é a geração**, e o CLI tem uma escada para achar onde está o erro:
+
+| Comando | O que confirma |
+|---|---|
+| `mi check <projeto>` | o envio chegou inteiro |
+| `mi load <projeto>` | o mapa é legível e vira a estrutura que os geradores leem |
+| `mi compile <projeto> <grupo> <sub>` | o gerador compila, sem gerar nada |
+| `mi generate <projeto> struct xml className=<C> packageName=<p>` | a classe tem a forma que você pretendia — **a validação do mapa** |
+
+Legível não é certo: um link para mapa inexistente ou uma propriedade desconhecida passam pelo `load` em
+silêncio, e só o `struct` mostra. Os agentes sabem disso e não declaram um mapa válido sem ter rodado o
+`struct` na classe.
 
 ### Referência de sintaxe `.mi`
 
@@ -216,7 +227,7 @@ Vale commitar tudo isso: é assim que o time inteiro passa a usar os mesmos agen
 |---|---|
 | `Unknown skill` logo depois de instalar | a sessão já estava aberta — abra uma nova |
 | agente falha em **toda** escrita | hook declarado, script ausente — rode o `install-into-project.sh` ([§2](#hooks-de-segurança)) |
-| `mi generate` devolve arquivo vazio, sem erro | o gerador não casou com nada: nome de classe, pacote ou sub-gerador errado, ou caminho `#` fora da pasta onde se rodou `mi init`. Veja o checklist em `docs/pipeline-iadd.md` |
+| `mi generate` devolve arquivo vazio, sem erro | rode `mi compile` no gerador para descartar erro de compilação; se passar, o gerador não casou com nada: nome de classe, pacote ou sub-gerador errado, ou caminho `#` fora da pasta onde se rodou `mi init`. Veja o checklist em `docs/pipeline-iadd.md` |
 | arquivo gerado contém `EMI…` | é erro do `mi`, saído no stdout e redirecionado para dentro do arquivo. Depois de gerar, confira com `grep -rl 'EMI[0-9]' <destino>` |
 | `mi` recusa autenticação | o usuário não está autorizado — veja [Licença](#licença) |
 

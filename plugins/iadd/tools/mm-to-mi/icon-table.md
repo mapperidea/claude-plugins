@@ -58,7 +58,7 @@ confirma que a forma crua é a correta.)*
 [Field.public] currentUser: ThreadLocal()
 ```
 
-Isso não é erro de conversão visível: é um `.mi` que *parece* bom e que o `push` vai recusar ou, pior,
+Isso não é erro de conversão visível: é um `.mi` que *parece* bom e que o `load` vai recusar ou, pior,
 normalizar de um jeito que você não previu. Por isso `convert.sh` **compara os ícones usados em cada `.mm`
 contra a lista conhecida e reporta a diferença**. Leia o relatório; ele é metade do valor da ferramenta.
 
@@ -103,4 +103,4 @@ que isso passe despercebido.
    (para ignorar, emita string vazia).
 2. Acrescente a linha correspondente à tabela **Conhecidos** acima.
 3. Rode `convert.sh` de novo e confirme que o ícone sumiu do relatório.
-4. `mi push` e `struct`: a conversão só termina na validação do DOM.
+4. `mi push`, `mi load` e `struct`: a conversão só termina na validação do DOM — o `push` só envia.

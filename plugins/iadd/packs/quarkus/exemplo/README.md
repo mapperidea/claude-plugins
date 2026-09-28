@@ -41,7 +41,7 @@ onde se fez o `mi init` (a *home* do projeto), e o `mi push` só envia o que est
 ```sh
 cd plugins/iadd/packs/quarkus
 mi init exemplo-quarkus exemplo/main.mi     # uma vez; o nome do projeto é sugestão
-mi push exemplo-quarkus                     # publica na sua conta: é o único validador real
+mi push exemplo-quarkus                     # publica na sua conta — envia, não valida
 
 mi generate exemplo-quarkus quarkus domain modelName=Pedido package=com.exemplo.domain.loja
 ```

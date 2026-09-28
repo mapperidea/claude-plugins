@@ -48,7 +48,8 @@ check generator-author.md "saída vazia não é 'nada a gerar'" 'não conclua qu
 header "cli-runner"
 check cli-runner.md "detecta o HOME, não fixa"           'Nunca fixe o caminho'
 check cli-runner.md "reinterpreta erro de autorização"   'Error loading authorization'
-check cli-runner.md "push é o único validador"           'único.{0,3} meio de validação real'
+check cli-runner.md "push envia, não valida"             'push.{0,40}\*\*não valida\*\*'
+check cli-runner.md "só struct autoriza dizer 'válido'"  'não rodou .struct. na classe'
 check cli-runner.md "grep não é validação"               'não é validação'
 check cli-runner.md "cadência init/push/generate"        'push.{0,40}antes de.{0,40}generate|a cada alteração'
 check cli-runner.md "não escreve .mi"                    'Não edite nem crie arquivos'

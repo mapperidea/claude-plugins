@@ -59,7 +59,7 @@ apenas o que a tarefa exigir, em vez de carregar tudo.
 | a forma do DOM normalizado e os XPaths que casam nele | `references/dom-xpath.md` |
 | funções `mi:`, XPath padrão e `functx:` | `references/funcoes.md` |
 | onde os arquivos ficam, referências `#` entre mapas | `references/convencoes-projeto.md` |
-| comandos do CLI (`init`, `push`, `generate`) e scripts de geração | `references/cli.md` |
+| comandos do CLI (`init`, `push`, `check`/`load`/`compile`, `generate`) e scripts de geração | `references/cli.md` |
 | um exemplo completo de mapa de negócio ou de gerador | `references/exemplos.md` |
 
 **Regra de bolso**: pergunta sobre *ler ou escrever mapa de negócio* → `sintaxe.md`. Pergunta sobre

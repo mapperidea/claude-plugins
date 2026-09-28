@@ -7,7 +7,7 @@
 # <destino>  diretório de saída; a árvore de pastas da origem é preservada
 # --strict   sai com código 1 se algum ícone não mapeado for encontrado
 #
-# A conversão NÃO termina aqui: valide o resultado com `mi push` e inspecione o DOM
+# A conversão NÃO termina aqui: envie com `mi push`, confira com `mi load` e inspecione o DOM
 # com o gerador `struct` antes de confiar no .mi. Ver ../../docs/pipeline-iadd.md §1.
 set -uo pipefail
 
@@ -118,7 +118,7 @@ fi
 cat <<EOF
 
 Próximo passo — a conversão não termina aqui:
-  mi push <projeto>                                       # o único validador real
+  mi push <projeto>                                       # envia; não valida
   mi generate <projeto> struct xml className=<C> packageName=<p>   # confira o @mode no DOM
 EOF
 

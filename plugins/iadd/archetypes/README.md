@@ -54,6 +54,6 @@ e sem o método escrito eles viram três agentes que se estorvam.
 
 ## Gate
 
-`tests/test-i1-archetype-method.sh` fixa 40 afirmações de método. Editou um arquétipo e ficou vermelho: ou
+`tests/test-i1-archetype-method.sh` fixa 41 afirmações de método. Editou um arquétipo e ficou vermelho: ou
 você removeu método, ou mudou de ideia sobre o que é método — as duas exigem decisão, nenhuma exige
 ignorar o teste.

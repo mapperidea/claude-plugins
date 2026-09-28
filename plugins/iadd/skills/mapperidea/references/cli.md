@@ -27,7 +27,35 @@ mi p nome-do-projeto
 mapperidea push nome-do-projeto
 ```
 
-### 3. Gerar código — `generate` / `g`
+O `push` **não valida** o conteúdo: ele só envia. É obrigatório a cada alteração de qualquer `.mi` porque
+todos os outros comandos rodam **no servidor**, sobre a última versão enviada — sem `push`, você valida e
+gera o mapa de antes.
+
+### 3. Validar — `check` / `load` / `compile`
+
+A validação acontece quando o servidor **lê** o mapa. Os comandos formam uma escada: cada um refaz os
+anteriores e acrescenta um passo, então subir degrau a degrau mostra **onde** está o erro.
+
+```bash
+mi k nome-do-projeto                          # check:   o que foi enviado chegou inteiro e está acessível
+mi l nome-do-projeto                          # load:    o mapa principal e os ligados são lidos e viram o DOM
+mi c nome-do-projeto nome-gerador sub-gerador # compile: o gerador compila contra o mapa, sem gerar nada
+```
+
+Erro vem como `EMI…` seguido do texto do problema; no `compile`, com o trecho do gerador onde falhou.
+
+**`load` e `compile` passarem não prova que o mapa está certo** — prova que é legível e que o gerador
+compila. Um link para um mapa que não existe não falha o `load` (vira nó vazio), e uma propriedade `@` fora
+do vocabulário é descartada sem aviso. Quem mostra isso é o `struct`:
+
+```bash
+mi g nome-do-projeto struct xml className=Pedido packageName=com.exemplo.dominio > /tmp/pedido.xml
+```
+
+O `struct` vem no pack padrão — existe em todo projeto — e despeja a forma normalizada da classe. Rodá-lo
+completo é a validação de referência do mapa.
+
+### 4. Gerar código — `generate` / `g`
 
 ```bash
 mi g nome-do-projeto nome-gerador sub-gerador param1=valor1 param2=valor2 > arquivo-saida
@@ -38,6 +66,9 @@ Exemplo real com variáveis de ambiente e redirecionamento de saída:
 ```bash
 mi g teste quarkus domain modelName=$MODEL_NAME package=$PACKAGE > "$BASE_PATH/domain/${MODEL_NAME}.java"
 ```
+
+Erro de execução do gerador volta **dentro da saída**, não como falha do comando: redirecionado com `>`,
+o `EMI…` fica escrito no arquivo gerado. Depois de gerar, confira com `grep -rl 'EMI[0-9]' <destino>`.
 
 ### Script de geração múltipla — padrão recomendado
 
@@ -133,7 +164,10 @@ Quando solicitado a criar um script de geração, use este modelo como base, ada
 | Completo | Abreviado | Descrição |
 |----------|-----------|-----------|
 | `mapperidea init <projeto> <mapa.mm>` | — | Inicializa projeto na pasta atual |
-| `mapperidea push <projeto>` | `mi p <projeto>` | Sobe todos os mapas do projeto |
-| `mapperidea generate <projeto> <gerador> <sub> [params]` | `mi g <projeto> <gerador> <sub> [params]` | Executa gerador com parâmetros |
+| `mapperidea push <projeto>` | `mi p <projeto>` | Sobe todos os mapas do projeto — não valida |
+| `mapperidea check <projeto>` | `mi k <projeto>` | Confere que o envio chegou inteiro e acessível |
+| `mapperidea load <projeto>` | `mi l <projeto>` | Lê os mapas e monta o DOM — o mapa é legível? |
+| `mapperidea compile <projeto> <gerador> <sub>` | `mi c <projeto> <gerador> <sub>` | Compila o gerador sem gerar |
+| `mapperidea generate <projeto> <gerador> <sub> [params]` | `mi g <projeto> <gerador> <sub> [params]` | Executa gerador com parâmetros; com `struct xml`, valida a forma da classe |
 
 ---

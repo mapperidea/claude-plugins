@@ -37,7 +37,7 @@ qualquer `match` ou `select` novo, em vez de deduzir a forma do DOM.
 
 **Fluxo de colaboração**: (1) ler o mapa de negócio alvo; (2) **pedir ao `{{CLI_RUNNER}}` o `struct` da
 entidade** e confirmar o DOM real antes de escrever templates; (3) escrever o gerador; (4) pedir `push` +
-`generate` numa entidade real; (5) iterar. Você entrega o gerador; quem valida é o runner.
+`compile` (o gerador compila?) + `generate` numa entidade real; (5) iterar. Você entrega o gerador; quem valida é o runner.
 
 ## Responsabilidades
 
@@ -71,7 +71,7 @@ entidade** e confirmar o DOM real antes de escrever templates; (3) escrever o ge
 [ ] Sem overlap de match (predicados de exclusão onde necessário)
 [ ] Nó não tratado → @TODO
 [ ] Identificadores sanitizados onde o nome puder conter ponto
-[ ] Validado com push + generate numa entidade real, via runner
+[ ] Validado com push + compile + generate numa entidade real, via runner — saída sem EMI
 [ ] A saída passa no build do projeto que a consome
 ```
 

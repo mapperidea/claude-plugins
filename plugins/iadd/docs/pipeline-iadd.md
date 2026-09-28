@@ -71,7 +71,7 @@ pior e o `.mm` carrega *bookkeeping* de editor que é ruído puro para a IA).
 |---|---|---|
 | Primeiro passo | modelar a primeira entidade | converter a árvore `.mm` |
 | Primeiro risco | modelar o que não se entendeu | achar que converteu porque o arquivo existe |
-| Primeiro gate | `mi push` aceita o mapa | `mi push` aceita **e** o `struct` mostra o que se esperava |
+| Primeiro gate | `push` + `load` passam **e** o `struct` mostra o que se esperava | idem — e o relatório da conversão foi lido |
 
 ---
 
@@ -87,7 +87,7 @@ pior e o `.mm` carrega *bookkeeping* de editor que é ruído puro para a IA).
   │  MAPA DE NEGÓCIO  ·  mi/<contexto>/*.mi   ([b] entidades, [c] tipos auxiliares)│
   │  tipos em linguagem de NEGÓCIO (Texto, Data, ValorMonetario) — nunca técnicos │
   └────────────────────────────────┬─────────────────────────────────────────────┘
-                                   │  cli-runner:  mi push <projeto>
+                                   │  cli-runner:  mi push <projeto>  →  mi load <projeto>
                                    ▼
   ┌──────────────────────────────────────────────────────────────────────────────┐
   │  DOM NORMALIZADO  (na nuvem)                                                 │
@@ -117,8 +117,8 @@ Cada etapa tem entrada, saída e **gate de saída** — o que precisa ser verdad
 | Etapa | Entrada | Saída | Gate de saída |
 |---|---|---|---|
 | 1. Modelagem | história / `.mm` | `mi/<contexto>/*.mi` | checklist de qualidade da entidade + registro no `main.mi` |
-| 2. Normalização | mapa de negócio | DOM | `mi push` retorna sucesso |
-| 3. Observação | DOM | entendimento da forma | `struct` mostra os atributos/`properties` que o gerador vai casar |
+| 2. Normalização | mapa de negócio | DOM | `push` enviou e `load` passa — legível, ainda não validado |
+| 3. Observação | DOM | entendimento da forma | `struct` mostra os atributos/`properties` que o gerador vai casar — **é aqui que o mapa se valida** |
 | 4. Autoria do gerador | DOM + convenções da stack | `mi/generators/**` | checklist do gerador (§7) |
 | 5. Geração | gerador + mapa | código | saída **não vazia** e sintaticamente válida |
 | 6. Verificação | código | confiança | build/typecheck/testes do projeto passam |
@@ -145,7 +145,7 @@ que impede os modos de falha conhecidos.
    de descrever o negócio. O mapa é o documento de negócio; se ele mente, tudo abaixo mente.
 2. **O autor de gerador não edita o mapa de negócio.** Senão, o modelo passa a ser moldado pela conveniência
    do gerador — a cauda balançando o cachorro.
-3. **Quem escreve não valida.** O `cli-runner` não tem ferramenta de escrita: ele roda `push`/`struct`/`generate`
+3. **Quem escreve não valida.** O `cli-runner` não tem ferramenta de escrita: ele roda `push`/`load`/`compile`/`struct`/`generate`
    e **reporta o texto exato** do resultado. Quem escreveu o artefato tem viés para interpretar erro como
    "provavelmente é outra coisa".
 4. **Nenhum dos três inventa a forma do DOM.** Quando o `generator-author` precisa saber como um atributo
@@ -168,14 +168,34 @@ mi generate <projeto> <grupo> <sub> modelName=<Classe> package=<pkg> > <destino>
 ```
 
 Depois do `init`, tudo roda de qualquer diretório — a referência é o **nome do projeto**.
-**Regra**: editou `.mi`, fez `push` antes de `generate`. Sem exceção.
+**Regra**: editou `.mi`, fez `push` antes de qualquer outro comando. Sem exceção — tudo o que vem depois
+acontece **no servidor**, sobre a última versão enviada; sem `push`, você valida e gera o mapa de antes.
 
-### O `push` é o validador
+### O `push` envia; quem valida é a geração
 
-`mi push` é o **único** meio de validação real: ele normaliza o mapa e rejeita o que está inconsistente.
-Comandos locais de carga **não validam**. Corolário operacional, e é uma regra de conduta do `cli-runner`:
+`mi push` **não valida**: ele só leva os mapas para a nuvem. É essencial — sem ele nada do que vem depois
+enxerga a sua edição —, mas "o `push` passou" não diz nada sobre o conteúdo do mapa.
 
-> **Se você não rodou `push`, você não afirma que o mapa está válido.** "Validado por `grep`" não é validação.
+A validação acontece quando o servidor **lê** o mapa, e há uma escada de comandos para isso. Cada degrau
+refaz os anteriores e acrescenta um; subir degrau a degrau serve para **isolar** onde está o erro:
+
+| Degrau | Comando | O que prova quando passa | Quem usa |
+|---|---|---|---|
+| 1 | `mi check <projeto>` | o que foi enviado chegou inteiro e está acessível para o seu usuário | diagnóstico |
+| 2 | `mi load <projeto>` | o mapa principal e os mapas ligados a ele foram lidos e viraram o DOM normalizado | depois de mexer no mapa de negócio |
+| 3 | `mi compile <projeto> <grupo> <sub>` | o gerador compila contra o mapa — sem gerar nada | depois de mexer num gerador |
+| 4 | `mi generate <projeto> struct xml className=<C> packageName=<p>` | a classe tem a **forma** que se pretendia | a validação de referência do mapa |
+| 5 | `mi generate <projeto> <grupo> <sub> …` | o gerador roda sobre uma classe real | a validação do gerador |
+
+Os erros vêm como `EMI…` com o texto do problema — leia o texto, não só o código.
+
+**Os degraus 2 e 3 passarem não basta**: eles provam que o mapa é *legível* e o gerador *compilável*, não
+que dizem o que você quis dizer. Um link para um mapa que não existe **não falha** o `load` — vira um nó
+vazio, em silêncio —, e uma propriedade `@` fora do vocabulário é descartada sem aviso. Só o `struct` mostra
+isso. Por isso a regra de conduta do `cli-runner` é:
+
+> **Se você não rodou `struct` na classe, você não afirma que o mapa está válido.** "O `push` passou" não é
+> validação, e "validado por `grep`" também não.
 
 ### O `struct` é o microscópio
 
@@ -194,7 +214,7 @@ propriedades; uma chave inventada no bloco `@` é **descartada em silêncio** �
 
 | Sintoma | O que parece | O que é |
 |---|---|---|
-| **Saída vazia + exit 0** | "o gerador rodou, só não tinha o que gerar" | `start match` não casou, ou uma expressão de `var` abortou a compilação. O erro real (`EMI…`) aparece no `generate`, não no `push`. Também dá saída vazia, sem erro nem com `-d`: caminho `#` fora da home do `mi init` (ver o checklist do §7), sub-gerador, `modelName` ou `package` inexistentes. E o `EMI…` sai no **stdout**, com exit 0 — redirecionado com `>`, fica escrito **dentro** do arquivo gerado: depois de gerar, `grep -rl 'EMI[0-9]'` na saída. |
+| **Saída vazia + exit 0** | "o gerador rodou, só não tinha o que gerar" | `start match` não casou, ou uma expressão de `var` abortou a compilação. O erro real (`EMI…`) aparece no `compile` ou no `generate` — nunca no `push`, que não lê o gerador. Também dá saída vazia, sem erro nem com `-d`: caminho `#` fora da home do `mi init` (ver o checklist do §7), sub-gerador, `modelName` ou `package` inexistentes. E o `EMI…` sai no **stdout**, com exit 0 — redirecionado com `>`, fica escrito **dentro** do arquivo gerado: depois de gerar, `grep -rl 'EMI[0-9]'` na saída. |
 | **Propriedade `@` não faz efeito** | "o gerador ignora essa prop" | a prop não existe no DOM — foi descartada na normalização por não estar no vocabulário conhecido |
 | **Dois templates casam o mesmo nó** | "ele pega o primeiro" | prioridade **igual** → o motor usa o **último** em ordem de documento. Nunca confie na ordem: torne os `match` mutuamente exclusivos. |
 | **Campo existe no `.mi` e não no código** | "bug do gerador" | o campo caiu na normalização — está ausente do DOM, o gerador nunca teve o que casar |
@@ -206,7 +226,7 @@ Todos os quatro **passam por uma leitura de código e por qualquer `grep`**. Nen
 ## 5. O loop de desenvolvimento de um gerador
 
 ```
-1. push                    reflete o mapa atual no DOM
+1. push                    envia o mapa atual para a nuvem (não valida)
 2. struct <Classe>         inspeciona a forma real: attribute/@type, @mode, properties/…
 3. escreve/ajusta          match, apply-templates, dispatch por tipo
 4. generate numa entidade REAL, para arquivo
@@ -320,8 +340,8 @@ Quarkus que assume o namespace do projeto de origem não é um pack de stack, é
 |---|---|
 | **Mapa de Negócio** | `.mi` que descreve entidades e atributos em linguagem de negócio. Documento de domínio, legível por quem não programa. |
 | **Mapa de Arquitetura** | `.mi` que descreve um **gerador**: casa nós do DOM e emite texto. Dialeto XSLT-like. |
-| **DOM normalizado** | a árvore que o `push` produz a partir dos mapas. Fonte de verdade da forma do dado. Não é idêntica ao `.mi`. |
-| **`struct`** | gerador embutido que despeja o DOM de uma classe em XML. O microscópio do método. |
+| **DOM normalizado** | a árvore que o servidor monta a partir dos mapas enviados pelo `push` (o `load` para nela; todo `generate` passa por ela). Fonte de verdade da forma do dado. Não é idêntica ao `.mi`. |
+| **`struct`** | gerador do pack padrão — disponível em todo projeto — que despeja o DOM de uma classe em XML. O microscópio do método, e a validação de referência do mapa. |
 | **pack** | conjunto de geradores de uma stack. Semente, não dependência. |
 | **seam** (`config`/`maps`) | o bloco do `main.mi` onde convenções e dicionários de tipo são declarados uma vez e lidos por todos os geradores. |
 | **ilha** | trecho de código escrito à mão que vive **fora** do caminho da geração, porque a saída é sobrescrita por inteiro. |
@@ -337,10 +357,16 @@ cd mi/ && mi init meuprojeto main.mi
 # porta B: trazendo mapas .mm existentes
 xsltproc tools/mm-to-mi/exportMI.xsl dominio.mm | sed 's/§/ /g' > mi/dominio/Dominio.mi
 
-# a cada alteração de mapa (negócio OU gerador)
+# a cada alteração de mapa (negócio OU gerador) — envia, não valida
 mi push meuprojeto
 
-# observar antes de escrever gerador
+# mexeu no mapa de negócio: ele é legível?
+mi load meuprojeto
+
+# mexeu num gerador: ele compila?
+mi compile meuprojeto quarkus entity
+
+# validar o mapa, e observar antes de escrever gerador
 mi generate meuprojeto struct xml className=Pedido packageName=com.exemplo.dominio > /tmp/pedido.xml
 
 # gerar

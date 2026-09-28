@@ -378,7 +378,7 @@ faltando no código gerado.
 
 | Sintoma | Causa provável | O que fazer |
 |---|---|---|
-| **Saída vazia, exit 0** | `start match` não casou, ou uma expressão de `var` abortou a compilação | rode o `generate` e leia o erro `EMI…` (ele **não** aparece no `push`); confira `modelName`/`package` contra o DOM |
+| **Saída vazia, exit 0** | `start match` não casou, ou uma expressão de `var` abortou a compilação | rode `mi compile <projeto> <grupo> <sub>` ou o `generate` e leia o erro `EMI…` (ele **não** aparece no `push`, que não lê o gerador); confira `modelName`/`package` contra o DOM |
 | **Gerador "não existe"** | registrado em 3 níveis, ou raiz do arquivo ≠ nome do sub | §8 |
 | **Template não dispara** | `@type` fora do `mapNativeTypes`, ou `@mode` diferente do imaginado | confira no `struct` |
 | **Dois templates casam o mesmo nó** | prioridade igual → vence o **último** | predicados mutuamente exclusivos |
@@ -405,7 +405,7 @@ faltando no código gerado.
 [ ] Sem overlap de match (predicados de exclusão onde dois poderiam casar)
 [ ] Catch-all @TODO no fim de cada modo
 [ ] Identificadores sanitizados onde o nome puder conter ponto
-[ ] push + generate numa entidade REAL: saída não-vazia e sintaticamente válida
+[ ] push + compile + generate numa entidade REAL: saída não-vazia, sem EMI e sintaticamente válida
 [ ] A saída passa no build/typecheck do projeto que a consome
 ```
 

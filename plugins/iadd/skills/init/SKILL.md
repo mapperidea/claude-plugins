@@ -235,7 +235,7 @@ agora** — que normalmente é uma destas duas:
 
   ```sh
   cd <pasta dos mapas> && mi init <projeto> <mapa principal>   # uma vez
-  mi push <projeto>                                            # o único validador real
+  mi push <projeto>                                            # envia; não valida
   mi generate <projeto> struct xml className=<C> packageName=<p>   # confira o @mode
   ```
 
