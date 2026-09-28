@@ -41,6 +41,13 @@ Duas coisas de uma vez:
    cru vira o atalho (`[Field.public] currentUser: ThreadLocal()`), e o `.mi` parece bom. Ver
    [`icon-table.md`](icon-table.md).
 
+## Links entre mapas
+
+Link local para outro mapa (`#` → `dominio/pedido.mm`) sai **como `.mi`** (`dominio/pedido.mi`): o mapa de
+destino também foi convertido, e um `.mi` que aponta `.mm` manda quem lê procurar um arquivo que não vai
+existir. URL (`https://…`) e link para arquivo que não é mapa passam como estão. Texto que só *menciona*
+`.mm` — num template, por exemplo — não é link e não é tocado.
+
 ## Qual dos mapas convertidos é o principal
 
 Ele não se identifica pelo nome nem pelo tamanho — **o maior mapa raramente é o principal**. Identifica-se

@@ -67,7 +67,17 @@
             <xsl:text>    #&#xA;</xsl:text>
             <xsl:value-of select="$indent"/>
             <xsl:text>        </xsl:text>
-            <xsl:value-of select="@LINK"/>
+            <!-- Link para outro mapa: .mm vira .mi, porque o mapa de destino também foi convertido.
+                 URL (tem ://) passa como está. -->
+            <xsl:variable name="len" select="string-length(@LINK)"/>
+            <xsl:choose>
+                <xsl:when test="substring(@LINK, $len - 2) = '.mm' and not(contains(@LINK, '://'))">
+                    <xsl:value-of select="concat(substring(@LINK, 1, $len - 3), '.mi')"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:value-of select="@LINK"/>
+                </xsl:otherwise>
+            </xsl:choose>
             <xsl:text>&#xA;</xsl:text>
         </xsl:if>
         <xsl:apply-templates select="node">
