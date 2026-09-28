@@ -1,0 +1,1342 @@
+[e] restAPI
+    [e] parameters
+        [e] packageName
+            [v] NOT_DEFINED
+    [e] vars
+        [e] nativeTypes
+            [v] String Boolean Inteiro DateTime Double Numeric Timestamp Number Texto Long Numero Data tinyint int date datetime bin varchar bit decimal tinyint-unsigned double int-unsigned
+        [e] toSwaggerTypes
+            [e] select
+                [v] //maps/toSwaggerTypes
+        [e] mapNativeTypes
+            [e] select
+                [v] //maps/mapNativeTypes
+        [e] packageDef
+            [e] select
+                [v] /classes/package[@name = $packageName]
+        [e] classSchema
+            [e] select
+                [v] /classes/class[@name = 'CurrentSchema']
+        [e] projectName
+            [e] select
+                [v] $classSchema/properties/projectNames/projectName/value
+        [e] host
+            [e] select
+                [v] $classSchema/properties/projectNames/host/value
+        [e] tokenUrl
+            [e] select
+                [v] $classSchema/properties/projectNames/tokenUrl/value
+    [e] fragments
+        [e] tabulaDescription
+            [v] for $linha in functx:lines(string-join(properties/description/pt/value,codepoints-to-string(10))) return mi:tabulate-text(concat(normalize-space($linha),codepoints-to-string(10)),'            ',80)
+    [e] patterns
+        [e] assinaturaSwagger
+            [v] swagger: '2.0'
+            [v] info:
+            [v]   version: v1
+            [v]   title: {{ $projectName }} API {{ $packageDef/properties/title/pt/value }}
+            [v]   description: {{ $packageDef/properties/description/pt/value }}
+            [v] host: {{ $host }}
+            [v] securityDefinitions:
+            [v]   {{ substring-after($packageName,'.domain.') }}_auth:
+            [v]     type: oauth2
+            [v]     tokenUrl: {{ $tokenUrl }}
+            [v]     flow: application
+            [v]     scopes:
+            [v]       write: Permite modificar entidades na sua conta.
+            [v]       read: Permite ler entidades na sua conta.
+            [v] security:
+            [v]   - {{ substring-after($packageName,'.domain.') }}_auth:
+            [v]     - write
+            [v]     - read
+            [v] schemes:
+            [v]   - https
+            [v] basePath: /{{ translate(substring-after($packageName,'.domain.'), '.','/') }}
+        [g] tags
+            [e] tagsStart
+                [v] tags:
+            [e] entityTag
+                [v] - name: {{ @name }}
+                [v]   description: |
+                [v] {{ f#[tabulaDescription] }}
+        [g] paths
+            [e] pathsStart
+                [v] paths:
+            [g] queryParameters
+                [e] queryParameterOneToOne-id
+                    [v]       - name: "{{ @name }}.id"
+                    [v]         in: "query"
+                    [v]         description: "Filtra registros por {{ @name }} usando ID interno da API"
+                    [v]         type: integer
+                    [v]         minimum: 0
+                    [v]         maximum: 2147483647
+                    [v]         format: int32
+                [e] queryParameterOneToOne-idErp
+                    [v]       - name: "{{ @name }}.idErp"
+                    [v]         in: "query"
+                    [v]         description: "Filtra registros por {{ @name }} usando ID do ERP"
+                    [v]         type: string
+                [e] queryParameterOneToOne-uuid
+                    [v]       - name: "{{ @name }}.uuid"
+                    [v]         in: "query"
+                    [v]         description: "Filtra registros por {{ @name }} usando UUID da referencia"
+                    [v]         type: string
+                [e] queryParameterNativeTypes
+                    [v]       - name: "{{ mi:if-else($attributeParent != 'ND', concat($attributeParent, '.'), '') }}{{ @name }}"
+                    [v]         in: "query"
+                    [v]         description: "{{ mi:if-else($attributeParent != 'ND', concat('Filtra registros por ', $attributeParent, ' usando ', @name), concat('Filtra registros por ', @name)) }}"
+                    [v]         type: {{ $toSwaggerTypes/*[name() = current()/@type]/value }}
+                [e] queryParameterVersion
+                    [v]       - name: "version"
+                    [v]         in: "query"
+                    [v]         description: "Filtra registros por versão"
+                    [v]         type: integer
+                [e] validationParameterInteger
+                    [v]         minimum: 0
+                    [v]         maximum: {{ mi:if-else(exists(@typeParameter),mi:replicate('9',@typeParameter),'255') }}
+                [e] validationParameterLong
+                    [v]         minimum: 0
+                    [v]         maximum: {{ mi:if-else(exists(@typeParameter),mi:replicate('9',@typeParameter),'255') }}
+                [e] validationParameterDouble
+                    [v]         minimum: 0
+                    [v]         maximum: {{ mi:if-else(exists(@typeParameter),mi:replicate('9',@typeParameter),'255') }}
+            [g] listAll
+                [e] listAllStart
+                    [v]   /{{ @name }}:
+                    [v]     get:
+                    [v]       operationId: "{{  @name  }}_listAll"
+                    [v]       summary: Lista todos os registros de {{ @name }}.
+                    [v]       description: |
+                    [v]           Limitado a 100 registros, para mais resultados usar o listRange em conjunto com count.
+                    [v]       tags:
+                    [v]         - {{ @name }}
+                    [v]       parameters:
+                    [v]       - name: "sortBy"
+                      |         in: "query"
+                      |         description: "Campo para ordenação"
+                      |         type: string
+                      |       - name: "sortDirection"
+                      |         in: "query"
+                      |         description: "Direção da ordenação (asc ou desc)"
+                      |         type: string
+                      |         enum:
+                      |           - asc
+                      |           - desc
+                      |         default: "asc"
+                [e] listAllEnd
+                    [v]       produces:
+                    [v]       - "application/json"
+                    [v]       responses:
+                    [v]         '200':
+                    [v]           description: OK
+                    [v]           schema:
+                    [v]             type: array
+                    [v]             items:
+                    [v]               $ref: '#/definitions/{{ $nameWithModule }}'
+            [g] create
+                [e] create
+                    [v]     post:
+                    [v]       operationId: "{{ @name }}_create"
+                    [v]       summary: Cria um registro de {{ @name }}.
+                    [v]       tags:
+                    [v]         - {{ @name }}
+                    [v]       consumes:
+                    [v]       - "application/json"
+                    [v]       parameters:
+                    [v]       - in: "body"
+                    [v]         name: "body"
+                    [v]         description: "Request body"
+                    [v]         required: true
+                    [v]         schema:
+                    [v]               $ref: '#/definitions/{{ $nameWithModule }}'
+                    [v]       responses:
+                    [v]         '200':
+                    [v]           description: OK
+                    [v]           schema:
+                    [v]               $ref: '#/definitions/{{ $nameWithModule }}'
+            [g] delete
+                [e] delete
+                    [v]     delete:
+                      |       operationId: "{{ @name }}_delete"
+                      |       summary: Remove um registro de {{ @name }}.
+                      |       tags:
+                      |         - {{ @name }}
+                    [v]       consumes:
+                    [v]       - "application/json"
+                    [v]       parameters:
+                      |       - name: "value"
+                      |         in: "path"
+                      |         description: "ID do {{ @name }} a ser removido"
+                      |         required: true
+                      |         type: integer
+                      |         minimum: 0
+                      |         format: int32
+                      |       responses:
+                      |         '204':
+                      |           description: "Registro removido com sucesso."
+            [e] patch-id
+                [g] id
+                    [v]     patch:
+                    [v]       operationId: "{{ @name }}_patch" 
+                    [v]       summary: Altera parcialmente o respectivo registro de {{ @name }}.
+                    [v]       tags:
+                    [v]         - {{ @name }}
+                    [v]       consumes:
+                    [v]       - "application/json"
+                    [v]       parameters:
+                    [v]       - name: "value"
+                    [v]         in: "path"
+                    [v]         required: true
+                    [v]         type: "integer"
+                    [v]         minimum: 0
+                    [v]         maximum: 2147483647
+                    [v]         format: int32
+                    [v]       - in: "body"
+                    [v]         name: "body"
+                    [v]         description: "Request body"
+                    [v]         required: true
+                    [v]         schema:
+                    [v]           $ref: '#/definitions/{{ $nameWithModule }}'
+                    [v]       responses:
+                    [v]         '200':
+                    [v]           description: OK
+            [g] count
+                [e] countStart
+                    [v]   /{{ @name }}/count:
+                    [v]     get:
+                    [v]       operationId: "{{ @name }}_count"
+                    [v]       summary: Retorna contagem dos registros de {{ @name }}.
+                    [v]       tags:
+                    [v]         - {{ @name }}
+                    [v]       parameters:
+                [e] countEnd
+                    [v]       produces:
+                    [v]       - "application/json"
+                    [v]       responses: 
+                    [v]         '200': 
+                    [v]           description: OK 
+                    [v]           schema: 
+                    [v]               $ref: '#/definitions/CountResult' 
+            [g] sum
+                [e] sumStart
+                    [v]   /{{ @name }}/sum/{fieldName}:
+                    [v]     get:
+                    [v]       operationId: "{{ @name }}_sum"
+                    [v]       summary: Retorna a soma do campo especificado no path de {{ @name }}.
+                    [v]       tags:
+                    [v]         - {{ @name }}
+                    [v]       parameters:
+                    [v]       - name: "fieldName"
+                    [v]         in: "path"
+                    [v]         required: true
+                    [v]         type: "string"
+                [e] sumEnd
+                    [v]       produces:
+                    [v]       - "application/json"
+                    [v]       responses: 
+                    [v]         '200': 
+                    [v]           description: OK 
+                    [v]           schema: 
+                    [v]               $ref: '#/definitions/SumResult' 
+            [g] listRange
+                [e] listRangeStart
+                    [v]   /{{ @name }}/{from}/{to}:
+                    [v]     get:
+                    [v]       operationId: "{{ @name }}_listRange"
+                    [v]       summary: Lista os registros de {{ @name }} por faixa de posição.
+                    [v]       description: |
+                    [v]           Observar que a faixa inicia em 0 e o limite máximo é de 100 itens retornados total.
+                    [v]           Deve ser usado em conjunto com o count para determinar qtos itens tem no total, e no seu aplicativo fazer o controle de paginas.
+                    [v]           Por exemplo, ao usar um determinado filtro o count retorna o valor de 240 itens, e no seu aplicativo usa 20 itens por pagina:
+                    [v]           A primeira pagina vai ser from = 0 e o to = 19
+                    [v]           A segunda pagina vai ser from = 20 e o to = 39
+                    [v]           e assim sucessivamente até ler toda a lista.
+                    [v]           ATENÇÃO para usar o mesmo filtro (query parameters) no count e no listRange para evitar divergencia no tamanho da lista, lembrando que a lista pode aumentar caso novos registros sejam inseridos no banco, durante a leitura paginada.
+                    [v]       tags:
+                    [v]         - {{ @name }}
+                    [v]       parameters:
+                    [v]       - name: "from"
+                    [v]         in: "path"
+                    [v]         required: true
+                    [v]         type: "integer"
+                    [v]       - name: "to"
+                    [v]         in: "path"
+                    [v]         required: true
+                    [v]         type: "integer"
+                    [v]       - name: "sortBy"
+                      |         in: "query"
+                      |         description: "Campo para ordenação"
+                      |         type: string
+                      |       - name: "sortDirection"
+                      |         in: "query"
+                      |         description: "Direção da ordenação (asc ou desc)"
+                      |         type: string
+                      |         enum:
+                      |           - asc
+                      |           - desc
+                      |         default: "asc"
+                [e] listRangeEnd
+                    [v]       produces:
+                    [v]       - "application/json"
+                    [v]       responses:
+                    [v]         '200':
+                    [v]           description: OK
+                    [v]           schema:
+                    [v]             type: array
+                    [v]             items:
+                    [v]               $ref: '#/definitions/{{ $nameWithModule }}'
+            [e] get-id
+                [g] id
+                    [v]   /{{ @name }}/id/{value}:
+                    [v]     get:
+                    [v]       operationId: "{{ @name }}_byId_read"
+                    [v]       summary: Retorna o respectivo registro de {{ @name }} usando o ID da API.
+                    [v]       tags:
+                    [v]         - {{ @name }}
+                    [v]       parameters:
+                    [v]       - name: "value"
+                    [v]         in: "path"
+                    [v]         required: true
+                    [v]         type: "integer"
+                    [v]         minimum: 0
+                    [v]         maximum: 2147483647
+                    [v]         format: int32
+                    [v]       produces:
+                    [v]       - "application/json"
+                    [v]       responses:
+                    [v]         '200':
+                    [v]           description: OK
+                    [v]           schema:
+                    [v]             $ref: '#/definitions/{{ $nameWithModule }}'
+            [e] upload-id
+            [e] put-id
+                [g] id
+                    [v]     put:
+                    [v]       operationId: "{{ @name }}_update" 
+                    [v]       summary: Altera o respectivo registro de {{ @name }}.
+                    [v]       tags:
+                    [v]         - {{ @name }}
+                    [v]       consumes:
+                    [v]       - "application/json"
+                    [v]       parameters:
+                    [v]       - name: "value"
+                    [v]         in: "path"
+                    [v]         required: true
+                    [v]         type: "integer"
+                    [v]         minimum: 0
+                    [v]         maximum: 2147483647
+                    [v]         format: int32
+                    [v]       - in: "body"
+                    [v]         name: "body"
+                    [v]         description: "Request body"
+                    [v]         required: true
+                    [v]         schema:
+                    [v]           $ref: '#/definitions/{{ $nameWithModule }}'
+                    [v]       responses:
+                    [v]         '200':
+                    [v]           description: OK
+            [e] get-idErp
+                [g] idErp
+                    [v]   /{{ @name }}/erp/{value}:
+                    [v]     get:
+                    [v]       operationId: "{{ @name }}_byIdErp_read"
+                    [v]       summary: Retorna o respectivo registro de {{ @name }} usando o id do ERP.
+                    [v]       tags:
+                    [v]         - {{ @name }}
+                    [v]       parameters:
+                    [v]       - name: "value"
+                    [v]         in: "path"
+                    [v]         required: true
+                    [v]         type: "string"
+                    [v]       produces:
+                    [v]       - "application/json"
+                    [v]       responses:
+                    [v]         '200':
+                    [v]           description: OK
+                    [v]           schema:
+                    [v]             $ref: '#/definitions/{{ $nameWithModule }}'
+            [e] put-idErp
+                [g] idErp
+                    [v]     put:
+                    [v]       operationId: "{{ @name }}_byIdErp_update" 
+                    [v]       summary: Altera o respectivo registro de {{ @name }} usando o id do ERP.
+                    [v]       tags:
+                    [v]         - {{ @name }}
+                    [v]       consumes:
+                    [v]       - "application/json"
+                    [v]       parameters:
+                    [v]       - name: "value"
+                    [v]         in: "path"
+                    [v]         required: true
+                    [v]         type: "string"
+                    [v]       - in: "body"
+                    [v]         name: "body"
+                    [v]         description: "Request body"
+                    [v]         required: true
+                    [v]         schema:
+                    [v]           $ref: '#/definitions/{{ $nameWithModule }}'
+                    [v]       responses:
+                    [v]         '200':
+                    [v]           description: OK
+            [e] get-uuid
+                [g] uuid
+                    [v]   /{{ @name }}/uuid/{value}:
+                    [v]     get:
+                    [v]       operationId: "{{ @name }}_byUuid_read"
+                    [v]       summary: Retorna o respectivo registro de {{ @name }} usando o UUID.
+                    [v]       tags:
+                    [v]         - {{ @name }}
+                    [v]       parameters:
+                    [v]       - name: "value"
+                    [v]         in: "path"
+                    [v]         required: true
+                    [v]         type: "string"
+                    [v]       produces:
+                    [v]       - "application/json"
+                    [v]       responses:
+                    [v]         '200':
+                    [v]           description: OK
+                    [v]           schema:
+                    [v]             $ref: '#/definitions/{{ $nameWithModule }}'
+            [e] put-uuid
+                [g] uuid
+                    [v]     put:
+                    [v]       operationId: "{{ @name }}_byUuid_update" 
+                    [v]       summary: Altera o respectivo registro de {{ @name }} usando o UUID.
+                    [v]       tags:
+                    [v]         - {{ @name }}
+                    [v]       consumes:
+                    [v]       - "application/json"
+                    [v]       parameters:
+                    [v]       - name: "value"
+                    [v]         in: "path"
+                    [v]         required: true
+                    [v]         type: "string"
+                    [v]       - in: "body"
+                    [v]         name: "body"
+                    [v]         description: "Request body"
+                    [v]         required: true
+                    [v]         schema:
+                    [v]           $ref: '#/definitions/{{ $nameWithModule }}'
+                    [v]       responses:
+                    [v]         '200':
+                    [v]           description: OK
+            [e] errorResponses
+                [v]         '400':
+                [v]           description: "A requisição foi malformada, omitindo atributos obrigatórios, seja no payload ou através de atributos na URL."
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]         '401':
+                [v]           description: "Cabeçalho de autenticação ausente/inválido ou token inválido"
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]         '403':
+                [v]           description: "O token tem escopo incorreto ou uma política de segurança foi violada"
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]         '404':
+                [v]           description: "O recurso solicitado não existe ou não foi implementado"
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]         '405':
+                [v]           description: "O consumidor tentou acessar o recurso com um método não suportado"
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]         '406':
+                [v]           description: "A solicitação continha um cabeçalho Accept diferente dos tipos de mídia permitidos ou um conjunto de caracteres diferente de UTF-8"
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]         '422':
+                [v]           description: "A sintaxe da requisição esta correta, mas não foi possível processar as instruções presentes."
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]         '423':
+                [v]           description: "O recurso está bloqueado."
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]         '429':
+                [v]           description: "A operação foi recusada, pois muitas solicitações foram feitas dentro de um determinado período ou o limite global de requisições concorrentes foi atingido"
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]         '500':
+                [v]           description: "Ocorreu um erro no gateway da API ou no microsserviço"
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]         '504':
+                [v]           description: "GATEWAY TIMEOUT - A requisição não foi atendida dentro do tempo limite estabelecido"
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]         '529':
+                [v]           description: "O site está sobrecarregado e a operação foi recusada, pois foi atingido o limite máximo de TPS global, neste momento."
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+            [e] upload-id
+                [v]   /{{ @name }}/id/{value}/upload:
+                [v]     post:
+                [v]       operationId: "{{ @name }}_upload"
+                [v]       summary: "Realiza o upload do arquivo e retorna o status inicial."
+                [v]       description: |
+                [v]           Recebe o arquivo (multipart/form-data). O processamento é assíncrono.
+                [v]           Retorna imediatamente o objeto de status indicando que o arquivo foi recebido (ex: percentual 0 ou 1).
+                [v]       tags:
+                [v]         - {{ @name }}
+                [v]       consumes:
+                [v]         - multipart/form-data
+                [v]       parameters:
+                [v]       - name: "value"
+                [v]         in: "path"
+                [v]         required: true
+                [v]         type: "integer"
+                [v]         format: int32
+                [v]         description: "ID do {{ @name }}"
+                [v]       - name: "arquivo"
+                [v]         in: "formData"
+                [v]         description: "Arquivo binário para processamento"
+                [v]         required: true
+                [v]         type: file
+                [v]       responses:
+                [v]         '200':
+                [v]           description: "Upload recebido com sucesso."
+                [v]           schema:
+                [v]             $ref: '#/definitions/StatusProcessamentoUpload'
+                [v]         '400':
+                [v]           description: "Erro na requisição ou arquivo inválido."
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]         '500':
+                [v]           description: "Erro interno."
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+                [v]   /{{ @name }}/id/{value}/upload/status:
+                [v]     get:
+                [v]       operationId: "{{ @name }}_upload_status"
+                [v]       summary: "Consulta o andamento do processamento do upload."
+                [v]       tags:
+                [v]         - {{ @name }}
+                [v]       parameters:
+                [v]       - name: "value"
+                [v]         in: "path"
+                [v]         required: true
+                [v]         type: "integer"
+                [v]         format: int32
+                [v]         description: "ID do {{ @name }}"
+                [v]       responses:
+                [v]         '200':
+                [v]           description: "Status recuperado com sucesso."
+                [v]           schema:
+                [v]             $ref: '#/definitions/StatusProcessamentoUpload'
+                [v]         '404':
+                [v]           description: "Recurso ou status não encontrado."
+                [v]           schema:
+                [v]             $ref: '#/definitions/ErrorResponse'
+            [g] methos
+                [e] methodsStart
+                    [v]   /{{ ancestor::class/@name }}/{{ properties/path/value }}:
+                    [v]     get:
+                    [v]       operationId: "{{  ancestor::class/@name  }}_{{ @name }}"
+                    [v]       summary: {{ properties/summary/value }}
+                    [v]       description: |
+                    [v] {{ f#[tabulaDescription] }}
+                    [v]       tags:
+                    [v]         - {{ ancestor::class/@name }}
+                [e] methodsParametersStart
+                    [v]       parameters:
+                [g] parameters
+                    [e] methodParameterNativeTypes
+                        [v]       - name: "{{ @name }}"
+                        [v]         in: "{{ mi:if-else(exists(properties/in), properties/in/value, 'query') }}"
+                        [v]         required: {{ mi:if-else(exists(properties/required), 'true', 'false') }}
+                        [v]         description: "Filtra registros por {{ @name }}"
+                        [v]         type: {{ $toSwaggerTypes/*[name() = current()/@type]/value }}
+                [e] methodsEnd
+                    [v]       produces:
+                    [v]       - "application/json"
+                    [v]       responses:
+                    [v]         '200':
+                    [v]           description: OK
+                    [v]           schema:
+                    [v]             type: array
+                    [v]             items:
+                    [v]               $ref: '#/definitions/{{ $nameWithModule }}'
+                [e] methodsReturnFileEnd
+                    [v]       produces:
+                    [v]       - "{{ properties/mimeType }}"
+                    [v]       responses:
+                    [v]         '200':
+                    [v]           description: OK
+        [g] definitions
+            [e] definitionsStart
+                [v] definitions:
+                [v]   IdReference:
+                [v]     type: object
+                [v]     properties:
+                [v]       id:
+                [v]         type: integer
+                [v]         minimum: 0
+                [v]         maximum: 2147483647
+                [v]         format: int32
+                [v]   CountResult:
+                [v]     type: object
+                [v]     properties:
+                [v]       count:
+                [v]         type: integer
+                [v]         minimum: 0
+                [v]         maximum: 2147483647
+                [v]         format: int32
+                [v]   ErrorResponse:
+                [v]     type: object
+                [v]     properties:
+                [v]       code:
+                [v]         type: integer
+                [v]         minimum: 0
+                [v]         maximum: 9999999999999
+                [v]         format: int32
+                [v]         description: |
+                [v]             Código do erro
+                [v]       message:
+                [v]         type: string
+                [v]         description: |
+                [v]             Mensagem resumida sobre o erro
+                [v]       description:
+                [v]         type: string
+                [v]         description: |
+                [v]             Detalhes para melhor entendimento do erro
+                [v]   SumResult:
+                [v]     type: object
+                [v]     properties:
+                [v]       sum:
+                [v]         type: number
+                [v]         minimum: 0.0
+                [v]         maximum: 999999999999.99
+                [v]         format: double
+            [e] idErpDefinition
+                [v]   IdErpReference:
+                [v]     type: object
+                [v]     properties:
+                [v]       idErp:
+                [v]         type: string
+                [v]   UuidReference:
+                [v]     type: object
+                [v]     properties:
+                [v]       uuid:
+                [v]         type: string
+            [e] defineClass
+                [v]   {{ $nameWithModule }}:
+                [v]     description: |
+                [v] {{ f#[tabulaDescription] }}
+                [v]     type: object
+            [e] defineRequiredStart
+                [v]     required:
+            [e] requiredAttribute
+                [v]       - {{ @name }}
+            [e] defineProperties
+                [v]     properties:
+                [v]       id:
+                [v]         type: integer
+                [v]         minimum: 0
+                [v]         maximum: 9999999999999
+                [v]         format: int64
+                [v]         description: |
+                [v]             ID para referência interna da API
+                [v]       version:
+                [v]         type: string
+                [v]         format: date-time
+                [v]         description: |
+                [v]             Data e hora da versão do registro. Usado principalmente para sincronização e controle de lock otimista.
+                [v]             Mantido pela API, não deve ser alterado, mas em caso de alterações deve ser copiado o valor recebido.
+                [v]             Em inclusões deve vir vazio, ao gravar a API irá retornar a primeira versão.
+                [v]             Em alterações deve vir o mesmo valor que verio no ultimo retorno de consulta do registro, ao gravar o sistema vai gerar um novo valor.
+                [v]             Somente com o valor certo desse campo, que registros podem ser atualizados.
+            [e] defineAttributeAnyType-start
+                [v]       {{ @name }}:
+            [e] defineAttributeAnyType-end
+                [v]         allOf:
+                [v]           - $ref: '#/definitions/IdReference'
+            [e] defineAttributeAnyType-end-idErp
+                [v]           - $ref: '#/definitions/IdErpReference'
+            [e] defineAttributeAnyType-end-uuid
+                [v]           - $ref: '#/definitions/UuidReference'
+            [e] defineAttributeAnyType-end-SK
+                [v]           - $ref: '#/definitions/{{ substring-after($class/@package,'.domain.') }}.{{ $class/@name}}Reference'
+            [e] defineDescription
+                [v]         description: |
+                [v] {{ f#[tabulaDescription] }}
+            [e] descriptionValuesAllowed-start
+                [v]             Valores permitidos: 
+            [e] defineDescriptionValueAllowed
+                [v]               {{ name(.) }}
+                [v]                  Valor: {{ value[1] }}
+                [v]                  Texto: {{ value[2] }}
+            [e] descriptionParagraph
+                [v]           {{ . }}
+            [e] defineAttributeDate
+                [v]       {{ @name }}:
+                [v]         type: string
+                [v]         format: date
+                        pattern: '^\d{4}-(01|02|03|04|05|06|07|08|09|10|11|12)-\d{2}
+                        minLength: 29
+                        maxLength: 29
+            [e] defineAttributeDateTime
+                [v]       {{ @name }}:
+                [v]         type: string
+                [v]         format: date-time
+                        pattern: '^\d{4}-(01|02|03|04|05|06|07|08|09|10|11|12)-\d{2} \d{2}:\d{2}:\d{2}'
+                        minLength: 29
+                        maxLength: 29
+            [e] defineAttributeCollection
+                [v]       {{ @name }}:
+                [v]         type: array
+                [v]         items:
+                [v]           $ref: '#/definitions/{{ @type }}'
+            [e] defineAttributeMap
+                [v]       {{ @name }}:
+                [v]         type: object
+            [e] defineAttributeString
+                [v]       {{ @name }}:
+                [v]         type: string
+                [v]         maxLength: {{ mi:if-else(exists(@typeParameter),@typeParameter,'255') }}
+                [v]         pattern: \w*\W*
+            [e] defineAttributeInteger
+                [v]       {{ @name }}:
+                [v]         type: integer
+                [v]         minimum: 0
+                [v]         maximum: {{ mi:replicate('9',$size) }}
+                [v]         format: int32
+            [e] defineAttributeLong
+                [v]       {{ @name }}:
+                [v]         type: integer
+                [v]         minimum: 0
+                [v]         maximum: {{ mi:replicate('9',$size) }}
+                [v]         format: int64
+            [e] defineAttributeVersion
+                [v]       version:
+                [v]         type: integer
+                [v]         minimum: 0
+                [v]         maximum: 9999999999999
+                [v]         format: int32
+                [v]         description: |
+                [v]             Timestamp da versão do registro
+            [e] defineAttributeDouble
+                [v]       {{ @name }}:
+                [v]         type: number
+                [v]         minimum: 0.0
+                [v]         maximum: {{ mi:replicate('9',$size) }}.{{ mi:replicate('9',$decimals) }}
+                [v]         format: double
+            [e] defineAttributeBoolean
+                [v]       {{ @name }}:
+                [v]         type: boolean
+            [e] start-SK
+                [v]   {{ $nameWithModule }}Reference:
+                [v]     description: |
+                [v]         Chave secundária para fazer referência a entidade {{ properties/title/pt/value }}
+                [v]     type: object
+                [v]     properties:
+            [e] defineStatusUpload
+                [v]   StatusProcessamentoUpload:
+                [v]     type: object
+                [v]     description: "Objeto padronizado para retorno de status de processamento de uploads."
+                [v]     properties:
+                [v]       idObjeto:
+                [v]         type: integer
+                [v]         format: int32
+                [v]         description: "ID do objeto principal vinculado ao upload (ex: ID do Lote)."
+                [v]       classeObjeto:
+                [v]         type: string
+                [v]         description: "Nome da classe ou tipo da entidade (ex: 'LoteAtendimento')."
+                [v]       percentualConcluido:
+                [v]         type: integer
+                [v]         format: int32
+                [v]         description: "Valor inteiro de 0 a 100 indicando o progresso."
+                [v]       mensagemAtual:
+                [v]         type: string
+                [v]         description: "Mensagem descritiva do passo atual ou erro."
+                [v]       dataUltimaAtualizacao:
+                [v]         type: string
+                [v]         format: date-time
+                [v]         description: "Data e hora da última alteração neste status."
+        [e] debug
+            [v] # ERRO NO MODELO, classe referenciada não existe
+            [v] # package: {{ @package }}
+            [v] # class: {{ @name }}
+            [v] # processedClassQueue: {{ $processedClassQueue }}
+            [v] # nextClassQueue: {{ $nextClassQueue }}
+        [g] @TODO
+            [e] declaraTODO
+                [v] //@TODO _ tem que implementar: {{ $nomeTODO }}
+                [v] //Caminho xpath: {{ functx:path-to-node-with-pos(current()) }}
+    [e] start
+        [e] match
+            [v] classes
+        [e] body
+            [e] vars
+                [e] var
+                    [v] initialClassQueue
+                    [e] expr
+                        [v] distinct-values(class[@package=$packageName and @mode = 'bean']/concat(substring-after(@package,'.domain.'),'.',@name))
+                [e] var
+                    [v] initialProcessedClassQueue
+                    [e] expr
+                        [v] ('.')
+            [e] write-pattern
+                [v] assinaturaSwagger
+            [e] write-pattern
+                [v] tagsStart
+            [e] apply-templates
+                [e] select
+                    [v] class[@package=$packageName and @mode = 'bean']
+                [e] mode
+                    [v] tags
+            [e] write-pattern
+                [v] pathsStart
+            [e] apply-templates
+                [e] select
+                    [v] class[@package=$packageName and @mode = 'bean']
+                [e] mode
+                    [v] paths
+            [e] write-pattern
+                [v] definitionsStart
+            [e] if
+                [v] exists(class[@package=$packageName and @mode = 'bean']/methods/method[@name = 'upload'])
+                [e] then
+                    [e] write-pattern
+                        [v] defineStatusUpload
+            [e] apply-templates
+                [e] select
+                    [v] class[concat(substring-after(@package,'.domain.'),'.',@name) = $initialClassQueue[1]]
+                [e] parameters
+                    [e] classQueue
+                        [e] expr
+                            [v] $initialClassQueue
+                    [e] processedClassQueue
+                        [e] expr
+                            [v] $initialProcessedClassQueue
+                [e] mode
+                    [v] definitions
+    [e] templates
+        [e] mode
+            [v] tags
+            [e] template
+                [e] match
+                    [v] class
+                [e] body
+                    [e] write-pattern
+                        [v] entityTag
+        [e] mode
+            [v] paths
+            [e] template
+                [e] match
+                    [v] class
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] nameWithModule
+                            [e] expr
+                                [v] concat(substring-after(@package,'.domain.'),'.',@name)
+                    [g] listAllAndCreate
+                        [e] write-pattern
+                            [v] listAllStart
+                        [e] apply-templates
+                            [e] select
+                                [v] attributes/attribute[not(exists(properties/readOnly))]
+                            [e] mode
+                                [v] queryParameters
+                        [e] write-pattern
+                            [v] listAllEnd
+                        [e] write-pattern
+                            [v] errorResponses
+                        [e] if
+                            [v] not(properties/readOnly)
+                            [e] then
+                                [g] create
+                                    [e] write-pattern
+                                        [v] create
+                                    [e] write-pattern
+                                        [v] errorResponses
+                    [g] sum
+                        [e] write-pattern
+                            [v] sumStart
+                        [e] apply-templates
+                            [e] select
+                                [v] attributes/attribute[not(properties/readOnly)]
+                            [e] mode
+                                [v] queryParameters
+                        [e] write-pattern
+                            [v] sumEnd
+                        [e] write-pattern
+                            [v] errorResponses
+                    [g] count
+                        [e] write-pattern
+                            [v] countStart
+                        [e] apply-templates
+                            [e] select
+                                [v] attributes/attribute[not(properties/readOnly)]
+                            [e] mode
+                                [v] queryParameters
+                        [e] write-pattern
+                            [v] countEnd
+                        [e] write-pattern
+                            [v] errorResponses
+                    [g] listRange
+                        [e] write-pattern
+                            [v] listRangeStart
+                        [e] apply-templates
+                            [e] select
+                                [v] attributes/attribute[not(properties/readOnly)]
+                            [e] mode
+                                [v] queryParameters
+                        [e] write-pattern
+                            [v] listRangeEnd
+                        [e] write-pattern
+                            [v] errorResponses
+                    [e] write-pattern
+                        [v] get-id
+                    [e] write-pattern
+                        [v] errorResponses
+                    [e] if
+                        [v] not(properties/readOnly)
+                        [e] then
+                            [e] write-pattern
+                                [v] put-id
+                            [e] write-pattern
+                                [v] errorResponses
+                            [g] delete
+                                [e] write-pattern
+                                    [v] delete
+                                [e] write-pattern
+                                    [v] errorResponses
+                            [g] patch
+                                [e] write-pattern
+                                    [v] patch-id
+                                [e] write-pattern
+                                    [v] errorResponses
+                    [e] if
+                        [v] attributes/attribute[1][@name = 'idErp']
+                        [e] then
+                            [e] write-pattern
+                                [v] get-idErp
+                            [e] write-pattern
+                                [v] errorResponses
+                            [e] if
+                                [v] not(properties/readOnly)
+                                [e] then
+                                    [e] write-pattern
+                                        [v] put-idErp
+                                    [e] write-pattern
+                                        [v] errorResponses
+                    [e] if
+                        [v] attributes/attribute[@name = 'uuid']
+                        [e] then
+                            [e] write-pattern
+                                [v] get-uuid
+                            [e] write-pattern
+                                [v] errorResponses
+                            [e] if
+                                [v] not(properties/readOnly)
+                                [e] then
+                                    [e] write-pattern
+                                        [v] put-uuid
+                                    [e] write-pattern
+                                        [v] errorResponses
+                    [e] if
+                        [v] methods/method[@name = 'upload'] and methods/method[@name = 'statusUpload']
+                        [e] then
+                            [e] write-pattern
+                                [v] upload-id
+                    [e] if
+                        [v] exists(methods/method[properties/language/code and properties/path])
+                        [e] then
+                            [e] apply-templates
+                                [e] select
+                                    [v] methods/method[properties/language/code and properties/path]
+                                [e] mode
+                                    [v] directLanguageCode
+        [e] mode
+            [v] queryParameters
+            [e] template
+                [e] match
+                    [v] attribute
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] if
+                        [v] contains($nativeTypes,@type) and @mode = 'directToField'
+                        [e] then
+                            [e] write-pattern
+                                [v] queryParameterNativeTypes
+                            [e] if
+                                [v] @type = 'Inteiro'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] validationParameterInteger
+                            [e] if
+                                [v] @type = 'Numero'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] validationParameterDouble
+                    [e] if
+                        [v] @mode = 'oneToOne'
+                        [e] then
+                            [e] vars
+                                [e] var
+                                    [v] pacote
+                                    [e] expr
+                                        [v] substring-before(@type,'.')
+                                [e] var
+                                    [v] tipo
+                                    [e] expr
+                                        [v] substring-after(@type,'.')
+                                [e] var
+                                    [v] class
+                                    [e] expr
+                                        [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                            [e] apply-templates
+                                [e] select
+                                    [v] $class/attributes/attribute[not(exists(properties/readOnly)) and @mode = 'directToField' and (@name = $class/properties/sk/value/text() or properties/searchable)]
+                                [e] parameters
+                                    [e] attributeParent
+                                        [e] expr
+                                            [v] mi:first-lower(@name)
+                                [e] mode
+                                    [v] queryParameters
+                            [e] write-pattern
+                                [v] queryParameterOneToOne-id
+                            [e] if
+                                [v] $class/attributes/attribute[1][@name = 'idErp']
+                                [e] then
+                                    [e] write-pattern
+                                        [v] queryParameterOneToOne-idErp
+                            [e] if
+                                [v] $class/attributes/attribute[@name = 'uuid']
+                                [e] then
+                                    [e] write-pattern
+                                        [v] queryParameterOneToOne-uuid
+                    [e] if
+                        [v] @name = 'id'
+                        [e] then
+                            [e] write-pattern
+                                [v] queryParameterVersion
+        [e] mode
+            [v] definitions
+            [e] template
+                [e] match
+                    [v] class
+                [e] parameters
+                    [e] processedClassQueue
+                        [v] NOT_DEFINED
+                    [e] classQueue
+                        [v] NOT_DEFINED
+                        valor
+                            pessoa.Pessoa
+                            pessoa.PessoaUsuario
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] nameWithModule
+                            [e] expr
+                                [v] concat(substring-after(@package,'.domain.'),'.',@name)
+                            valor
+                                pessoa.Pessoa
+                        [e] var
+                            [v] processedClassQueue
+                            [e] expr
+                                [v] functx:value-union($processedClassQueue,($nameWithModule))
+                            valor
+                                '.'
+                                'pessoa.Pessoa'
+                        [e] var
+                            [v] referencedClasses
+                            [e] expr
+                                [v] distinct-values(attributes/attribute[functx:is-value-in-sequence(@mode,('oneToOne','oneToMany','oneToManyIndependent','manyToOneIndependent')) and not(functx:is-value-in-sequence(@type,$processedClassQueue))]/@type)
+                            valor
+                                ()
+                        [e] var
+                            [v] nextClassQueueWithoutCurrentClass
+                            [e] expr
+                                [v] functx:value-except($classQueue, ($nameWithModule))
+                                valor
+                                    pessoa.PessoaUsuario
+                        [e] var
+                            [v] nextClassQueue
+                            [e] expr
+                                [v] functx:value-union($nextClassQueueWithoutCurrentClass,$referencedClasses)
+                                valor
+                                    pessoa.PessoaUsuario
+                                    usuario.Usuario
+                        [e] var
+                            [v] nextClass
+                            [e] expr
+                                [v] $nextClassQueue[1]
+                            valor
+                                pessoa.PessoaUsuario
+                    [e] write-pattern
+                        [v] defineClass
+                    [e] if
+                        [v] attributes/attribute/properties/required
+                        [e] then
+                            [e] write-pattern
+                                [v] defineRequiredStart
+                            [e] apply-templates
+                                [e] select
+                                    [v] attributes/attribute[properties/required]
+                                [e] mode
+                                    [v] defineRequired
+                    [e] write-pattern
+                        [v] defineProperties
+                    [e] apply-templates
+                        [e] select
+                            [v] attributes/attribute[not(properties/readOnly)]
+                        [e] mode
+                            [v] declaraCamposEntidade
+                    [e] if
+                        [v] properties/SK
+                        [e] then
+                            [e] vars
+                                [e] var
+                                    [v] sk
+                                    [e] expr
+                                        [v] properties/SK
+                            [e] write-pattern
+                                [v] start-SK
+                            [e] apply-templates
+                                [e] select
+                                    [v] attributes/attribute[@name = $sk/value]
+                                [e] mode
+                                    [v] declaraCamposEntidade
+                    [e] if
+                        [v] $nextClassQueue[1]
+                        [e] then
+                            [e] if
+                                [v] /classes/class[concat(substring-after(@package,'.domain.'),'.',@name) = $nextClassQueue[1]] 
+                                [e] then
+                                    [e] apply-templates
+                                        [e] select
+                                            [v] /classes/class[concat(substring-after(@package,'.domain.'),'.',@name) = $nextClassQueue[1]]
+                                        [e] parameters
+                                            [e] classQueue
+                                                [e] expr
+                                                    [v] $nextClassQueue
+                                            [e] processedClassQueue
+                                                [e] expr
+                                                    [v] $processedClassQueue
+                                        [e] mode
+                                            [v] definitions
+                                [e] else
+                                    [e] write-pattern
+                                        [v] debug
+        [e] mode
+            [v] declaraCamposEntidade
+            [e] template
+                [e] match
+                    [v] attribute[not(contains($nativeTypes,@type))]
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] pacote
+                            [e] expr
+                                [v] substring-before(@type,'.')
+                        [e] var
+                            [v] tipo
+                            [e] expr
+                                [v] substring-after(@type,'.')
+                        [e] var
+                            [v] class
+                            [e] expr
+                                [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                    [e] write-pattern
+                        [v] defineAttributeAnyType-start
+                    [e] write-pattern
+                        [v] defineDescription
+                    [e] write-pattern
+                        [v] defineAttributeAnyType-end
+                    [e] if
+                        [v] $class/attributes/attribute[1][@name = 'idErp']
+                        [e] then
+                            [e] write-pattern
+                                [v] defineAttributeAnyType-end-idErp
+                    [e] if
+                        [v] $class/attributes/attribute[@name = 'uuid']
+                        [e] then
+                            [e] write-pattern
+                                [v] defineAttributeAnyType-end-uuid
+                    [e] if
+                        [v] $class/properties/SK
+                        [e] then
+                            [e] write-pattern
+                                [v] defineAttributeAnyType-end-SK
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Date/value]
+                [e] body
+                    [e] write-pattern
+                        [v] defineAttributeDate
+                    [e] write-pattern
+                        [v] defineDescription
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                [e] body
+                    [e] write-pattern
+                        [v] defineAttributeDateTime
+                    [e] write-pattern
+                        [v] defineDescription
+            [e] template
+                [e] match
+                    [v] attribute[not(contains($nativeTypes,@type)) and contains(@mode,'oneToMany')]
+                [e] body
+                    [e] write-pattern
+                        [v] defineAttributeCollection
+                    [e] write-pattern
+                        [v] defineDescription
+            [e] template
+                [e] match
+                    [v] attribute[not(contains($nativeTypes,@type)) and @mode = 'directMap']
+                [e] body
+                    [e] write-pattern
+                        [v] defineAttributeMap
+                    [e] write-pattern
+                        [v] defineDescription
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/String/value]
+                [e] body
+                    [e] write-pattern
+                        [v] defineAttributeString
+                    [e] write-pattern
+                        [v] defineDescription
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Integer/value]
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] size
+                            [e] expr
+                                [v] xs:integer(number(mi:if-else(exists(@typeParameter), @typeParameter, '3')))
+                    [e] write-pattern
+                        [v] defineAttributeInteger
+                    [e] write-pattern
+                        [v] defineDescription
+                    [e] if
+                        [v] properties/values
+                        [e] then
+                            [e] write-pattern
+                                [v] descriptionValuesAllowed-start
+                            [e] apply-templates
+                                [e] select
+                                    [v] properties/values/*
+                                [e] mode
+                                    [v] descriptionValuesAllowed
+                    [e] if
+                        [v] @name = 'id'
+                        [e] then
+                            [e] write-pattern
+                                [v] defineAttributeVersion
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Long/value]
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] size
+                            [e] expr
+                                [v] xs:integer(number(mi:if-else(exists(@typeParameter), @typeParameter, '3')))
+                    [e] write-pattern
+                        [v] defineAttributeLong
+                    [e] write-pattern
+                        [v] defineDescription
+                    [e] if
+                        [v] @name = 'id'
+                        [e] then
+                            [e] write-pattern
+                                [v] defineAttributeVersion
+            [e] template
+                [e] match
+                    [v] attribute[@type=$mapNativeTypes/Double/value]
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] size
+                            [e] expr
+                                [v] xs:integer(number(mi:if-else(exists(@typeParameter), substring-before(@typeParameter,','), '10')))
+                        [e] var
+                            [v] decimals
+                            [e] expr
+                                [v] xs:integer(number(mi:if-else(exists(@typeParameter), substring-after(@typeParameter,','), '2')))
+                    [e] write-pattern
+                        [v] defineAttributeDouble
+                    [e] write-pattern
+                        [v] defineDescription
+            [e] template
+                [e] match
+                    [v] attribute[@type=$mapNativeTypes/Boolean/value]
+                [e] body
+                    [e] write-pattern
+                        [v] defineAttributeBoolean
+                    [e] write-pattern
+                        [v] defineDescription
+        [e] mode
+            [v] descriptionValuesAllowed
+            [e] template
+                [e] match
+                    [v] *
+                [e] body
+                    [e] write-pattern
+                        [v] defineDescriptionValueAllowed
+        [e] mode
+            [v] defineRequired
+            [e] template
+                [e] match
+                    [v] attribute
+                [e] body
+                    [e] write-pattern
+                        [v] requiredAttribute
+        [e] mode
+            [v] directLanguageCode
+            [e] template
+                [e] match
+                    [v] method
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] nameWithModule
+                            [e] expr
+                                [v] @returnType
+                    [e] write-pattern
+                        [v] methodsStart
+                    [e] if
+                        [v] parameters/parameter
+                        [e] then
+                            [e] write-pattern
+                                [v] methodsParametersStart
+                            [e] apply-templates
+                                [e] select
+                                    [v] parameters/parameter
+                                [e] mode
+                                    [v] directLanguageCode
+                    [e] if
+                        [v] @returnType = 'File'
+                        [e] then
+                            [e] write-pattern
+                                [v] methodsReturnFileEnd
+                        [e] else
+                            [e] write-pattern
+                                [v] methodsEnd
+            [e] template
+                [e] match
+                    [v] parameter
+                [e] body
+                    [e] write-pattern
+                        [v] methodParameterNativeTypes
+        [g] @TODO
+            [e] mode
+                [v] assignTODO
+                [e] template
+                    [e] match
+                        [v] *
+                    [e] parameters
+                        [e] nomeTODO
+                            [v] NOT_DEFINED
+                    [e] body
+                        [e] write-pattern
+                            [v] declaraTODO

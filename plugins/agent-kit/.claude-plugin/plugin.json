@@ -1,0 +1,15 @@
+{
+  "name": "agent-kit",
+  "version": "0.3.0",
+  "description": "Como se autora um agente Claude Code bom: wizard agent-creator, extrator de conhecimento de domínio, arquétipos de agente e as convenções de autoria. Independente de stack e de negócio.",
+  "author": {
+    "name": "Clovis Wichoski"
+  },
+  "keywords": [
+    "agents",
+    "scaffolding",
+    "claude-code",
+    "archetypes"
+  ],
+  "license": "LicenseRef-MapperIdea"
+}

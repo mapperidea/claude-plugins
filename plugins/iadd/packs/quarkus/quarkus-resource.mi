@@ -1,0 +1,2080 @@
+[e] resource
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] mapNativeTypes
+            [e] select
+                [v] //maps/mapNativeTypes
+        [e] classes
+            [e] select
+                [v] /classes
+        [e] transactionManager
+            [e] expr
+                [v] /classes/package[@name = $package]/properties/transaction/value
+        [e] classSchema
+            [e] select
+                [v] /classes/class[@name = 'CurrentSchema']
+        [e] map
+            [e] select
+                [v] $classSchema/properties/projectNames/map/value
+    [e] fragments
+        [e] tabulaDescription
+            [v] for $linha in functx:lines(string-join(properties/description/pt/value,codepoints-to-string(10))) return mi:tabulate-text(concat(normalize-space($linha),codepoints-to-string(10)),'* ',80)
+        [e] paramSeparator
+            [v] mi:if-else(position() = last(), '', ',')
+        [e] pacoteAPIBase
+            [v] concat(substring-before(@package,'.domain.'),'.', substring-after(@package,'.domain.'))
+        [e] pacoteMsBase
+            [v] concat(substring-before(@package,'.domain.'), '.', substring-after(@package,'.domain.'))
+        [e] withEnd
+            [v] mi:if-else(position() = last(), ';', '')
+        [e] temDirectToFieldNaQuery
+            [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode = 'directToField']
+    [e] patterns
+        [e] package
+            [v] package {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.resource;
+            [v] 
+            [v] import java.util.List;
+            [v] 
+            [v] import jakarta.persistence.PersistenceException;
+            [v] import org.eclipse.microprofile.jwt.JsonWebToken;
+            [v] import jakarta.inject.Inject;
+            [v] import jakarta.transaction.Transactional;
+            [v] import jakarta.ws.rs.*;
+            [v] import jakarta.ws.rs.core.MediaType;
+            [v] import io.quarkus.panache.common.Sort;
+            [v] 
+            [v] import {{ substring-before(@package,'.domain.') }}.exceptions.InvalidInputException;
+            [v] import {{ substring-before(@package,'.domain.') }}.exceptions.NotFoundException;
+        [g] imports
+            [e] import-date
+                [v] import java.time.LocalDate;
+            [e] import-dateTime
+                [v] import java.time.LocalDateTime;
+            [e] import
+                [v] import {{ substring-before($class/@package,'.domain.') }}.{{ substring-after($class/@package,'.domain.') }}.entity.{{ $class/@name }}Entity;
+            [e] import-entityBuilder
+                [v] import {{ substring-before($class/@package,'.domain.') }}.{{ substring-after($class/@package,'.domain.') }}.builder.{{ $class/@name }}EntityBuilder;
+            [e] import-upload
+                [v] import {{ substring-before(@package,'.domain.') }}.results.StatusProcessamentoUpload;
+                [v] import {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.service.{{ @name }}UploadService;
+                [v] import org.jboss.resteasy.reactive.RestForm;
+                [v] import org.jboss.resteasy.reactive.multipart.FileUpload;
+                [v] import java.io.InputStream;
+                [v] import java.io.FileInputStream;
+                [v] import java.io.FileNotFoundException;
+            [e] import-service
+                [v] import {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.service.{{ @name }}Service;
+        [g] import-dinamico
+            [e] import-dinamico
+                [v] 
+                [v] import {{ f#[pacoteAPIBase] }}.domain.{{ @name }};
+                [v] import {{ f#[pacoteMsBase] }}.entity.{{ @name }}Entity;
+                [v] import {{ f#[pacoteMsBase] }}.repository.{{ @name }}Repository;
+                [v] import {{ f#[pacoteMsBase] }}.mapper.{{ @name }}Mapper;
+                [v] import {{ substring-before(@package,'.domain.') }}.results.CountResult;
+        [g] interface
+            [e] interface-start
+                [v] 
+                [v] @Path("/{{ @name }}")
+                [v] @Produces(MediaType.APPLICATION_JSON)
+                [v] @Consumes(MediaType.APPLICATION_JSON)
+                [v] public class {{ @name }}Resource {
+                [v] 
+                [v]     @Inject
+                [v]     {{ @name }}Repository repository;
+                [v] 
+                [v]     @Inject
+                [v]     {{ @name }}Mapper mapper;
+                [v] 
+                [v]     @Inject
+                [v]     JsonWebToken jwt;
+            [e] inject-upload
+                [v] 
+                [v]     @Inject
+                [v]     {{ @name }}UploadService uploadService;
+            [e] interface-close
+                [v] 
+                [v] }
+            [e] inject-service
+                [v] 
+                [v]     @Inject
+                [v]     {{ @name }}Service service;
+        [g] construtor
+            [e] construtor
+                [v]   @Autowired
+                [v]   public {{ @name }}ServiceImpl({{ @name }}Repository repository, {{ @name }}Mapper mapper) {
+                [v]     this.repository = repository;
+                [v]     this.mapper = mapper;
+                [v]   }
+        [g] paths
+            [g] listAll
+                [e] listAllStart
+                    [v] 
+                    [v]     /**
+                    [v]      * Lista todos os registros de {{ @name }}.
+                    [v]      */
+                    [v]     @GET
+                    [v]     public List<{{ @name }}> listAll(
+                    [v]         @QueryParam("sortBy") String sortBy,
+                      |         @QueryParam("sortDirection") @DefaultValue("asc") String sortDirection,
+                [e] listAllBodyStart
+                    [v]     ) {
+                    [v]         Sort sort = Sort.by(sortBy != null ? sortBy : "id")
+                    [v]                         .direction(sortDirection.equalsIgnoreCase("desc") ?
+                    [v]                                    Sort.Direction.Descending : Sort.Direction.Ascending);
+                    [y]         List<{{ @name }}Entity> entityList = repository.findWithFilters(0, 100, sort,
+                [e] listAllBodyEnd
+                    [v] );
+                    [v] 
+                    [v]         return mapper.entityListToApiList(entityList);
+                    [v]     }
+            [g] ExampleMatcher
+                [e] exampleMatcher-inicio
+                    [v] 
+                    [v]         ExampleMatcher matcher = ExampleMatcher.matching()
+                [e] exampleMatcher-attribute-string
+                    [y]                 .withMatcher("{{ @name }}", ExampleMatcher.GenericPropertyMatchers.contains().ignoreCase())
+                [e] exampleMatcher-attribute-fim
+                    [v] ;
+            [g] withAttributes
+                [e] withExample-AnyType-open-start
+                    [v] 
+                    [y]         if ({{ @name }}Id != null
+                    [y] {{ if ($class/attributes/attribute[1][@name = 'idErp']) then concat(' || ',@name,'IdErp != null') else '' }}
+                    [y] {{ if ($class/attributes/attribute[@name = 'uuid']) then concat(' || ',@name,'Uuid != null') else '' }}
+                [e] withExample-AnyType-close-start
+                    [v] ) {
+                    [v]           {{ mi:first-upper($class/@name) }}EntityBuilder {{ mi:first-lower(@name) }}Builder = {{ mi:first-upper($class/@name) }}Entity.builderOf();
+                    [v]           if ({{ mi:first-lower(@name) }}Id != null) {
+                      |             {{ mi:first-lower(@name) }}Builder.withId({{ mi:first-lower(@name) }}Id);
+                      |           }
+                [e] clause-sk-searchable
+                    [y]  || {{ $attributeParent }}{{ mi:first-upper(@name) }} != null
+                [e] withExample-AnyType-idErp
+                    [v]           if ({{ mi:first-lower(@name) }}Id != null) {
+                      |             {{ mi:first-lower(@name) }}Builder.withIdErp({{ mi:first-lower(@name) }}IdErp);
+                      |           }
+                [e] withExample-AnyType-uuid
+                    [v]           if ({{ mi:first-lower(@name) }}Id != null) {
+                      |             {{ mi:first-lower(@name) }}Builder.withUuid({{ mi:first-lower(@name) }}Uuid);
+                      |           }
+                [e] withExample-AnyType-close
+                    [v]           builder.with{{ mi:first-upper(@name) }}({{ mi:first-lower(@name) }}Builder.build());
+                    [v]         }
+                [e] withExample-AnyType-sk-searchable
+                    [v]           if ({{ mi:first-lower($attributeParent) }}{{ mi:first-upper(@name) }} != null) {
+                      |             {{ mi:first-lower($attributeParent) }}Builder.with{{ mi:first-upper(@name) }}({{ mi:first-lower($attributeParent) }}{{ mi:first-upper(@name) }});
+                      |           }
+                [e] withExample-Date
+                    [v]             .with{{ mi:first-upper(@name) }}({{ @name }}){{ f#[withEnd] }}
+                [e] withExample-DateTime
+                    [v]             .with{{ mi:first-upper(@name) }}({{ @name }}){{ f#[withEnd] }}
+                [e] withExample-AnyTypeCollection
+                    [v] NOT ARCHITECTED
+                [e] withExample-AnyTypeMap
+                    [v] NOT ARCHITECTED
+                [e] withExample-String
+                    [v]             .with{{ mi:first-upper(@name) }}({{ @name }}){{ f#[withEnd] }}
+                [e] withExample-Integer
+                    [v]             .with{{ mi:first-upper(@name) }}({{ @name }}){{ f#[withEnd] }}
+                [e] withExample-Long
+                    [v]             .with{{ mi:first-upper(@name) }}({{ @name }}){{ f#[withEnd] }}
+                [e] withExample-Double
+                    [v]             .with{{ mi:first-upper(@name) }}({{ @name }}){{ f#[withEnd] }}
+                [e] withExample-Boolean
+                    [v]             .with{{ mi:first-upper(@name) }}({{ @name }}){{ f#[withEnd] }}
+            [g] create
+                [e] createStart
+                    [v] 
+                    [v]     /**
+                    [v]      * Cria um registro de {{ @name }}.
+                    [v]      */
+                    [v]     @POST
+                    [v]     @Transactional
+                    [v]     public {{ @name }} create({{ @name }} body) {
+                [e] createMiddle-try
+                    [v]       try {
+                    [v]         {{ @name }}Entity entity = mapper.apiToEntity(body);
+                    [v]         repository.persist(entity);
+                    [v] 
+                    [v]         return mapper.entityToApi(entity);
+                    [v] 
+                    [y]       }
+                [e] createMiddle-catchStart
+                    [v]  catch (PersistenceException pe) {
+                    [v]         throw new InvalidInputException(pe.getMessage(), pe.getCause());
+                [e] createMiddle-catchEnd
+                    [v]       } 
+                [e] createEnd
+                    [v]     }
+                [e] descricaoException
+                    [y]  + "{{ properties/title/pt/value/text() }}: " + body.get{{ mi:first-upper(@name) }}()
+            [g] count
+                [e] countStart
+                    [v] 
+                    [v]     /**
+                    [v]      * Retorna contagem dos registros de {{ @name }}.
+                    [v]      */
+                    [v]     @GET
+                    [v]     @Path("/count")
+                    [v]     public CountResult count(
+                [e] countMiddle
+                    [v]     ) {
+                    [v] 
+                [e] countEnd
+                    [v]         return countResult;
+                    [v]     }
+                [e] countBodyStart
+                    [v]         CountResult countResult = new CountResult();
+                    [y]         countResult.setCount(repository.countWithFilters(
+                [e] countBodyEnd
+                    [y] ));
+                    [v] 
+            [g] sum
+                [e] sumStart
+                    [v] 
+                    [v]     /**
+                    [v]      * Retorna Soma do campos especificao de {{ @name }}.
+                    [v]      */
+                    [v]     @Override
+                    [v]     @Transactional(transactionManager = "{{ $transactionManager }}TransactionManager", readOnly = true)
+                    [v]     public SumResult sum(
+                    [v]       String fieldName,
+                [e] sumMiddle
+                    [v]     ) {
+                    [v] 
+                [e] sumEnd
+                    [v]         return sumResult;
+                    [v]     }
+                [e] sumBodyStart
+                    [v]         SumResult sumResult = new SumResult();
+                    [y]         Double total = this.sum(getSpecification(
+                [e] sumBodyEnd
+                    [v] ), Double.class, fieldName);
+                    [v]         if (total != null) {
+                    [v]             sumResult.setSum(total);
+                    [v]         } else {
+                    [v]             sumResult.setSum(0);
+                    [v]         }
+            [g] listRange
+                [e] listRangeStart
+                    [v] 
+                    [v]     /**
+                    [v]      * Lista os registros de {{ @name }} por faixa de posição.
+                    [v]      */
+                    [v]     @GET
+                    [v]     @Path("/{from}/{to}")
+                    [v]     public List<{{ @name }}> listRange(
+                [e] declaraParametersFromTo
+                    [v]         @PathParam("from") int from,
+                    [v]         @PathParam("to") int to,
+                    [v]         @QueryParam("sortBy") @DefaultValue("id") String sortBy,
+                      |         @QueryParam("sortDirection") @DefaultValue("asc") String sortDirection,
+                [e] listRangeMiddle
+                    [v]     ) {
+                    [v] 
+                    [v]         if (from > to) {
+                    [v]             throw new InvalidInputException("The parameter from with value " + from + " must be lower than " + to + ".");
+                    [v]         }
+                    [v]         int limit = to - from + 1;
+                    [v]         if (limit > 100) {
+                    [v]             throw new InvalidInputException("Maximum of 100 entities are allowed in listRange operation.");
+                    [v]         }
+                    [v]         Sort sort = Sort.by(sortBy != null ? sortBy : "id")
+                    [v]                         .direction(sortDirection.equalsIgnoreCase("desc") ?
+                    [v]                                    Sort.Direction.Descending : Sort.Direction.Ascending);
+                    [y]         List<{{ @name }}Entity> entityList = repository.findWithFilters(from, limit, sort,
+                [e] listRangeEnd
+                    [v] );
+                    [v] 
+                    [v]         return mapper.entityListToApiList(entityList);
+                    [v]     }
+            [g] getAndUpdate
+                [g] id
+                    [e] get-id
+                        [v] 
+                        [v]     /**
+                        [v]      * Retorna o respectivo registro de {{ @name }} usando o ID da API.
+                        [v]      */
+                        [v]     @GET
+                        [v]     @Path("/id/{value}")
+                        [v]     public {{ @name }} getById(@PathParam("value") String value) {
+                        [v]       {{ @name }}Entity entity = repository.findByIdOptional(value)
+                        [v]             .orElseThrow(() -> new NotFoundException("No {{ mi:first-lower(@name) }} found for Id: " + value));
+                        [v] 
+                        [v]       return mapper.entityToApi(entity);
+                        [v]     }
+                [g] updateById
+                    [e] updateByIdStart
+                        [v] 
+                        [v]     /**
+                        [v]      * Altera o respectivo registro de {{ @name }}.
+                        [v]      */
+                        [v]     @PUT
+                        [v]     @Path("/id/{value}")
+                        [v]     @Transactional
+                        [v]     public void updateById(@PathParam("value") String value, {{ @name }} body) {
+                    [e] updateByIdMiddle-try
+                        [v]         {{ @name }}Entity entity = repository.findByIdOptional(value)
+                        [v]             .orElseThrow(() -> new NotFoundException("No {{ mi:first-lower(@name) }} found for Id: " + value));
+                        [v]         body.setId(value);
+                        [v]         mapper.updateApiToEntity(body, entity);
+                    [e] updateByIdEnd
+                        [v]     }
+                [g] patch
+                    [e] patch-id
+                        [v] 
+                        [v]     /**
+                          |      * Atualiza parcialmente um registro de {{ @name }} pelo ID.
+                          |      */
+                          |     @PATCH
+                          |     @Path("/id/{value}")
+                          |     @Transactional
+                          |     public void patchById(@PathParam("value") String value, {{ @name }} body) {
+                          |         {{ @name }}Entity entity = repository.findByIdOptional(value)
+                          |             .orElseThrow(() -> new NotFoundException("No {{ mi:first-lower(@name) }} found with ID: " + value));
+                          |         body.setId(value);
+                          |         mapper.patchApiToEntity(body, entity);
+                          |     }
+                [g] delete
+                    [e] delete-id
+                        [v] 
+                        [v]     /**
+                          |      * Deleta um registro de {{ @name }} pelo ID.
+                          |      */
+                          |     @DELETE
+                          |     @Path("/id/{value}")
+                          |     @Transactional
+                          |     public void deleteById(@PathParam("value") String value) {
+                          |         try {
+                          |             repository.deleteById(value);
+                          |         } catch (PersistenceException pe) {
+                          |             throw new InvalidInputException("Unable to delete profile with ID: " + value, pe.getCause());
+                          |         }
+                          |     }
+                [g] idErp
+                    [e] get-idErp
+                        [v] 
+                        [v]     /**
+                        [v]      * Retorna o respectivo registro de {{ @name }} usando o id do ERP.
+                        [v]      */
+                        [v]     @Override
+                        [v]     @Transactional(transactionManager = "tenantTransactionManager", readOnly = true)
+                        [v]     public {{ @name }} getByIdErp(String value) {
+                        [v] 
+                        [v]       {{ @name }}Entity entity = repository.findByIdErp(value)
+                        [v]         .orElseThrow(() -> new NotFoundException("No {{ mi:first-lower(@name) }} found for idErp: " + value));
+                        [v]       {{ @name }} response = mapper.entityToApi(entity);
+                        [v]       return response;
+                        [v]     }
+                    [g] updateByIdErp
+                        [e] updateByIdErpStart
+                            [v] 
+                            [v]     /**
+                            [v]      * Altera o respectivo registro de {{ @name }}.
+                            [v]      */
+                            [v]     @Override
+                            [v]     @Transactional(propagation = Propagation.REQUIRED, transactionManager = "{{ $transactionManager }}TransactionManager")
+                            [v]     public void updateByIdErp(String value, {{ @name }} body) {
+                        [e] updateByIdErpMiddle-try
+                            [v]       try {
+                            [v]         {{ @name }}Entity entity = repository.findByIdErp(value)
+                            [v]             .orElseThrow(() -> new NotFoundException("No {{ mi:first-lower(@name) }} found for IdErp: " + value));
+                            [v]         body.setIdErp(value);
+                            [v]         body.setId(entity.getId());
+                            [v]         repository.save(mapper.updateApiToEntity(body, entity));
+                            [y]       } 
+                        [e] updateByIdErpMiddle-catchStart
+                            [v] catch (DataIntegrityViolationException dive) {
+                            [v]         throw new InvalidInputException(dive.getMessage(), dive.getMostSpecificCause());
+                        [e] updateByIdErpMiddle-catchEnd
+                            [v]       }
+                        [e] updateByIdErpEnd
+                            [v]     }
+                [g] uuid
+                    [e] get-uuid
+                        [v] 
+                        [v]     /**
+                        [v]      * Retorna o respectivo registro de {{ @name }} usando o UUID.
+                        [v]      */
+                        [v]     @Override
+                        [v]     @Transactional(propagation = Propagation.REQUIRED, transactionManager = "{{ $transactionManager }}TransactionManager")
+                        [v]     public {{ @name }} getByUuid(String value) {
+                        [v] 
+                        [v]       {{ @name }}Entity entity = repository.findByUuid(value)
+                        [v]         .orElseThrow(() -> new NotFoundException("No {{ mi:first-lower(@name) }} found for uuid: " + value));
+                        [v]       {{ @name }} response = mapper.entityToApi(entity);
+                        [v]       return response;
+                        [v]     }
+                    [g] update
+                        [e] updateByUuidStart
+                            [v] 
+                            [v]     /**
+                            [v]      * Altera o respectivo registro de {{ @name }} usando o UUID.
+                            [v]      */
+                            [v]     @Override
+                            [v]     @Transactional(propagation = Propagation.REQUIRED, transactionManager = "{{ $transactionManager }}TransactionManager")
+                            [v]     public void updateByUuid(String value, {{ @name }} body) {
+                        [e] updateByUuidMiddle-try
+                            [v]       try {
+                            [v]         {{ @name }}Entity entity = repository.findByUuid(value)
+                            [v]             .orElseThrow(() -> new NotFoundException("No {{ mi:first-lower(@name) }} found for uuid: " + value));
+                            [v]         body.setUuid(value);
+                            [v]         body.setId(entity.getId());
+                            [v]         repository.save(mapper.updateApiToEntity(body, entity));
+                            [y]       } 
+                        [e] updateByUuidMiddle-catchStart
+                            [v] catch (DataIntegrityViolationException dive) {
+                            [v]         throw new InvalidInputException(dive.getMessage(), dive.getMostSpecificCause());
+                        [e] updateByUuidMiddle-catchEnd
+                            [v]       }
+                        [e] updateByUuidEnd
+                            [v]     }
+            [g] getPredicateFromEntityId
+                [e] getPredicateFromEntityId
+                    [v] 
+                    [v]     public List<Predicate> getPredicateFromEntityId(List<Predicate> predicates, String attributeName, String value, Root<{{@name}}Entity> root, CriteriaBuilder criteriaBuilder) {
+                    [v]         predicates.add(criteriaBuilder.equal(root.join(attributeName, JoinType.INNER).get("id"),value));
+                    [v]         return predicates;
+                    [v]     }
+            [g] getPredicateFromEntityField
+                [e] getPredicateFromEntityField
+                    [v] 
+                    [v]     public List<Predicate> getPredicateFromEntityField(List<Predicate> predicates, String className, String attributeName, String value, Root<{{@name}}Entity> root, CriteriaBuilder criteriaBuilder) {
+                    [v]         predicates.add(criteriaBuilder.equal(root.join(className, JoinType.INNER).get(attributeName),value));
+                    [v]         return predicates;
+                    [v]     }
+            [g] getSpecification
+                [e] getSpecificationStart
+                    [v] 
+                    [v]     public Specification<{{@name}}Entity> getSpecification(
+                [e] getSpecificationBodyStart
+                    [v] 
+                    [v]     ) {
+                    [v]         return new Specification<{{@name}}Entity>() {
+                    [v]             @Override
+                    [v]             public Predicate toPredicate(Root<{{@name}}Entity> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
+                    [v]                 List<Predicate> predicates = new ArrayList<>();
+                [e] getSpecificationBodyEnd
+                    [v] 
+                    [v]                 return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+                    [v]             }
+                    [v]         };
+                [e] getSpecificationEnd
+                    [v] 
+                    [v]     }
+            [g] Specification
+                [e] predicateFromField
+                    [v]                 if ({{@name}} != null) {
+                      |                     predicates = getPredicateFromField(predicates, "{{@name}}", {{@name}}, root, criteriaBuilder);  
+                      |                 }
+                [e] predicateFromEntityId
+                    [v]                 if ({{ mi:first-lower(@name) }}Id != null) {
+                      |                     predicates = getPredicateFromEntityId(predicates, "{{ mi:first-lower(@name) }}", {{ mi:first-lower(@name) }}Id, root, criteriaBuilder);  
+                      |                 }
+                [e] predicateFromEntityField
+                    [v]                 if ({{ mi:first-lower($attributeParent) }}{{ mi:first-upper(@name) }} != null) {
+                      |                     predicates = getPredicateFromEntityField(predicates, "{{ mi:first-lower($attributeParent) }}", "{{ mi:first-lower(@name) }}", {{ mi:first-lower($attributeParent) }}{{ mi:first-upper(@name) }}, root, criteriaBuilder);  
+                      |                 }
+            [g] sumFunction
+                [e] sumFunction
+                    [v] 
+                    [v]     @Transactional(transactionManager = "{{ $transactionManager }}", readOnly = true)	    public <S extends Number> S sum(Specification<{{ mi:first-upper(@name) }}Entity> spec, Class<S> resultType, String fieldName) {
+                      |         EntityManagerFactory emfactory = (EntityManagerFactory) SingletonManager.get("entityManagerFactoryTenant");
+                      |         EntityManager entityManager = emfactory.createEntityManager();
+                      |         try {
+                      | 		CriteriaBuilder builder = entityManager.getCriteriaBuilder();
+                      | 		CriteriaQuery<S> query = builder.createQuery(resultType);
+                      | 		Root<{{ mi:first-upper(@name) }}Entity> root = applySpecificationToCriteria(spec, query, entityManager);
+                      | 		query.select(builder.sum(root.get(fieldName).as(resultType)));
+                      | 		TypedQuery<S> typedQuery = entityManager.createQuery(query);
+                      | 		return typedQuery.getSingleResult();
+                      | 	 } finally {
+                      |             if (entityManager != null && entityManager.isOpen()) {
+                      |                 entityManager.close();
+                      |             }
+                      |         }	
+                      |     }
+                [e] applySpecificationToCriteria
+                    [v] 
+                    [v]     protected <S> Root<{{ mi:first-upper(@name) }}Entity> applySpecificationToCriteria(Specification<{{ mi:first-upper(@name) }}Entity> spec, CriteriaQuery<S> query, EntityManager entityManager) {
+                      |         Root<{{ mi:first-upper(@name) }}Entity> root = query.from({{ mi:first-upper(@name) }}Entity.class);
+                      |         if (spec == null) {
+                      |             return root;
+                      |         }
+                      |         CriteriaBuilder builder = entityManager.getCriteriaBuilder();
+                      |         Predicate predicate = spec.toPredicate(root, query, builder);
+                      |         if (predicate != null) {
+                      |             query.where(predicate);
+                      |         }
+                      |         return root;
+                      |     }
+                    
+            [g] upload
+                [e] uploadById
+                    [v] 
+                    [v]     /**
+                    [v]      * Realiza o upload do arquivo e retorna o status inicial.
+                    [v]      */
+                    [v]     @POST
+                    [v]     @Path("/id/{value}/upload")
+                    [v]     @Consumes(MediaType.MULTIPART_FORM_DATA)
+                    [v]     public StatusProcessamentoUpload upload(@PathParam("value") long value, @RestForm("arquivo") FileUpload file) {
+                    [v]         {{ @name }}Entity entity = repository.findByIdOptional(value)
+                    [v]                 .orElseThrow(() -> new NotFoundException("No {{ mi:first-lower(@name) }} found for Id: " + value));
+                    [v] 
+                    [v]         try {
+                    [v]             InputStream is = new FileInputStream(file.uploadedFile().toFile());
+                    [v]             return uploadService.iniciarUpload(entity, is);
+                    [v]         } catch (FileNotFoundException e) {
+                    [v]             throw new InvalidInputException("Arquivo não encontrado", e);
+                    [v]         }
+                    [v]     }
+                [e] uploadStatusById
+                    [v] 
+                    [v]     /**
+                    [v]      * Consulta o andamento do processamento do upload.
+                    [v]      */
+                    [v]     @GET
+                    [v]     @Path("/id/{value}/upload/status")
+                    [v]     public StatusProcessamentoUpload getUploadStatus(@PathParam("value") long value) {
+                    [v]         if (!repository.findByIdOptional(value).isPresent()) {
+                    [v]             throw new NotFoundException("No {{ mi:first-lower(@name) }} found for Id: " + value);
+                    [v]         }
+                    [v]         return uploadService.consultarStatus(value);
+                    [v]     }
+        [g] attributes
+            [e] queryAnyType-idErp
+                [v]         @RequestParam(value = "{{ @name }}.idErp") String {{ @name }}IdErp,
+            [e] queryAnyType-uuid
+                [v]         @RequestParam(value = "{{ @name }}.uuid") String {{ @name }}Uuid,
+            [e] queryAnyType
+                [v]         @RequestParam(value = "{{ @name }}.id") Long {{ @name }}Id{{ f#[paramSeparator] }}
+            [e] queryDate
+                [v]         @RequestParam(value = "{{ @name }}") LocalDate {{ @name }}{{ f#[paramSeparator] }}
+            [e] queryDateTime
+                [v]         @RequestParam(value = "{{ @name }}") LocalDateTime {{ @name }}{{ f#[paramSeparator] }}
+            [e] queryString
+                [v]         @RequestParam(value = "{{ @name }}") String {{ @name }}{{ f#[paramSeparator] }}
+            [e] queryInteger
+                [v]         @RequestParam(value = "{{ @name }}") Integer {{ @name }}{{ f#[paramSeparator] }}
+            [e] queryLong
+                [v]         @RequestParam(value = "{{ @name }}") Long {{ @name }}{{ f#[paramSeparator] }}
+            [e] queryDouble
+                [v]         @RequestParam(value = "{{ @name }}") Double {{ @name }}{{ f#[paramSeparator] }}
+            [e] queryBoolean
+                [v]         @RequestParam(value = "{{ @name }}") Boolean {{ @name }}{{ f#[paramSeparator] }}
+        [g] attributes-with-type
+            [e] attributeAnyType-idErp-with-type
+                [v]       String {{ @name }}IdErp,
+            [e] attributeAnyType-uuid-with-type
+                [v]       String {{ @name }}Uuid,
+            [e] attributeAnyType-with-type
+                [y]       Long {{ @name }}Id
+            [e] attributeDate-with-type
+                [y]       LocalDate {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeDateTime-with-type
+                [y]       LocalDateTime {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeString-with-type
+                [y]       String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeBinary-with-type
+                [y]       byte[] {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeInteger-with-type
+                [y]       Integer {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeLong-with-type
+                [y]       Long {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeDouble-with-type
+                [y]       Double {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeBoolean-with-type
+                [y]       Boolean {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+        [g] attributes-without-type
+            [e] attributeAnyType-idErp-without-type
+                [y] {{ @name }}IdErp,
+            [e] attributeAnyType-uuid-without-type
+                [y] {{ @name }}Uuid,
+            [e] attributeAnyType-without-type
+                [y]  {{ @name }}Id{{ f#[paramSeparator] }}
+            [e] attributeDate-without-type
+                [y]  {{ @name }}{{ f#[paramSeparator] }}
+            [e] attributeDateTime-without-type
+                [y]  {{ @name }}{{ f#[paramSeparator] }}
+            [e] attributeBinary-without-type
+                [y]  {{ @name }}{{ f#[paramSeparator] }}
+            [e] attributeString-without-type
+                [y]  {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeInteger-without-type
+                [y]  {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeLong-without-type
+                [y]  {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeDouble-without-type
+                [y]  {{ @name }}{{ f#[paramSeparator] }}
+            [e] attributeBoolean-without-type
+                [y]  {{ @name }}{{ f#[paramSeparator] }}
+        [g] attributes-with-type-string
+            [e] attributeAnyType-idErp-with-type-string
+                [v]       String {{ @name }}IdErp,
+            [e] attributeAnyType-uuid-with-type-string
+                [v]       String {{ @name }}Uuid,
+            [e] attributeAnyType-with-type-string
+                [y]         @QueryParam("{{ @name }}.id") String {{ @name }}Id
+            [e] attributeDate-with-type-string
+                [y]         @QueryParam("{{ @name }}") String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeDateTime-with-type-string
+                [y]         @QueryParam("{{ @name }}") String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeString-with-type-string
+                [y]         @QueryParam("{{ @name }}") String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeBinary-with-type-string
+                [y]         @QueryParam("{{ @name }}") String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeInteger-with-type-string
+                [y]         @QueryParam("{{ @name }}") String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeLong-with-type-string
+                [y]         @QueryParam("{{ @name }}") String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeDouble-with-type-string
+                [y]         @QueryParam("{{ @name }}") String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeBoolean-with-type-string
+                [y]         @QueryParam("{{ @name }}") String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+        [g] @TODO
+            [e] declaraTODO
+                [v] //@TODO _ tem que implementar: {{ $nomeTODO }}
+                [v] //Caminho xpath: {{ functx:path-to-node-with-pos(current()) }}
+            [e] declara-labelEstruturaXpath
+            [e] start-labelEstruturaXpath
+                [y] //Estrutura xpath: .[
+            [e] end-labelEstruturaXpath
+                [v] ]
+            [e] declara-nomeDoElemento
+                [y] name()='{{ name() }}'
+            [g] Estrutura xpath
+                [e] declara-barra
+                    [y] /
+                [e] declara-contadorElementosFilhos
+                    [y] count(*)={{ count(child::*) }}
+                [e] declara-andEspacoEmBranco
+                    [y]  and 
+                [e] declara-clausulaPositionName
+                    [y] child::*[position()={{ position() }} and name()='{{ name() }}']
+                [e] start-clausulaContZeroText
+                    [y] /.[count(*)=0 and 
+                [e] end-clausulaContZeroText
+                    [y] ]
+                [e] declara-clausulaText
+                    [y] text()='{{ text() }}'
+                [e] declara-clausulaTextName
+                    [y] text()
+                [e] declara-prefixoName
+                    [y] {{ $prefixoNome }}
+                [e] declara-clausulaNotTextName
+                    [y] not(text())
+        [g] generic
+            [e] breakLine
+                [v] 
+            [e] paramSeparator
+                [v] ,
+            [e] paramSeparatorLine
+                [y] ,
+        [g] directCode
+            [e] directCode
+                [v] 
+                [v] {{ properties/language/code/value }}
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [e] write-pattern
+                [v] package
+            [g] import
+                [e] if
+                    [v] attributes/attribute[@type = $mapNativeTypes/Date/value]
+                    [e] then
+                        [e] write-pattern
+                            [v] import-date
+                [e] if
+                    [v] attributes/attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] then
+                        [e] write-pattern
+                            [v] import-dateTime
+                [g] arrumar
+                    [e] write-pattern
+                        [v] import-dinamico
+                [e] if
+                    [v] exists(methods/method[@name = 'upload'])
+                    [e] then
+                        [e] write-pattern
+                            [v] import-upload
+                [e] if
+                    [v] exists(methods/method/descendant::command[@name = 'service'])
+                    [e] then
+                        [e] write-pattern
+                            [v] import-service
+                //
+                    [e] apply-templates
+                        [e] select
+                            [v] distinct-values(attributes/attribute[@mode != 'directToField']/@type)
+                        [e] mode
+                            [v] imports
+            [g] inicio
+                [e] write-pattern
+                    [v] interface-start
+                [e] if
+                    [v] exists(methods/method[@name = 'upload'])
+                    [e] then
+                        [e] write-pattern
+                            [v] inject-upload
+                [e] if
+                    [v] exists(methods/method/descendant::command[@name = 'service'])
+                    [e] then
+                        [e] write-pattern
+                            [v] inject-service
+            [g] corpo
+                //
+                    [e] write-pattern
+                        [v] construtor
+                [e] vars
+                    [e] var
+                        [v] nameWithModule
+                        [e] expr
+                            [v] concat(substring-after(@package,'.domain.'),'.',@name)
+                [g] list
+                    [e] write-pattern
+                        [v] listAllStart
+                    [e] apply-templates
+                        [e] select
+                            [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                        [e] mode
+                            [v] attributeParametersWithTypeString
+                    [e] write-pattern
+                        [v] listAllBodyStart
+                    [e] apply-templates
+                        [e] select
+                            [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                        [e] mode
+                            [v] attributeParametersWithoutType
+                    [e] write-pattern
+                        [v] listAllBodyEnd
+                [g] create
+                    [e] if
+                        [v] not(properties/readOnly)
+                        [e] then
+                            [e] apply-templates
+                                [e] select
+                                    [v] .
+                                [e] mode
+                                    [v] create
+                [g] count
+                    [e] write-pattern
+                        [v] countStart
+                    [e] apply-templates
+                        [e] select
+                            [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                        [e] mode
+                            [v] attributeParametersWithTypeString
+                    [e] write-pattern
+                        [v] countMiddle
+                    [g] body
+                        [e] write-pattern
+                            [v] countBodyStart
+                        [e] apply-templates
+                            [e] select
+                                [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                            [e] mode
+                                [v] attributeParametersWithoutType
+                        [e] write-pattern
+                            [v] countBodyEnd
+                    [e] write-pattern
+                        [v] countEnd
+                [g] sum
+                    [e] if
+                        [v] properties/resources/sum
+                        [e] then
+                            [e] write-pattern
+                                [v] sumStart
+                            [e] apply-templates
+                                [e] select
+                                    [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                                [e] mode
+                                    [v] attributeParametersWithTypeString
+                            [e] write-pattern
+                                [v] sumMiddle
+                            [g] body
+                                [e] write-pattern
+                                    [v] sumBodyStart
+                                [e] apply-templates
+                                    [e] select
+                                        [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                                    [e] mode
+                                        [v] attributeParametersWithoutType
+                                [e] write-pattern
+                                    [v] sumBodyEnd
+                            [e] write-pattern
+                                [v] sumEnd
+                [g] listRange
+                    [e] write-pattern
+                        [v] listRangeStart
+                    [e] write-pattern
+                        [v] declaraParametersFromTo
+                    [e] apply-templates
+                        [e] select
+                            [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                        [e] mode
+                            [v] attributeParametersWithTypeString
+                    [e] write-pattern
+                        [v] listRangeMiddle
+                    [e] apply-templates
+                        [e] select
+                            [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                        [e] mode
+                            [v] attributeParametersWithoutType
+                    [e] write-pattern
+                        [v] listRangeEnd
+                [e] write-pattern
+                    [v] get-id
+                [e] if
+                    [v] not(properties/readOnly)
+                    [e] then
+                        [e] apply-templates
+                            [e] select
+                                [v] .
+                            [e] mode
+                                [v] updateById
+                        [e] write-pattern
+                            [v] patch-id
+                [e] write-pattern
+                    [v] delete-id
+                [e] if
+                    [v] attributes/attribute[1][@name = 'idErp']
+                    [e] then
+                        [e] write-pattern
+                            [v] get-idErp
+                        [e] if
+                            [v] not(properties/readOnly)
+                            [e] then
+                                [e] apply-templates
+                                    [e] select
+                                        [v] .
+                                    [e] mode
+                                        [v] updateByIdErp
+                [e] if
+                    [v] attributes/attribute[@name = 'uuid']
+                    [e] then
+                        [e] write-pattern
+                            [v] get-uuid
+                        [e] if
+                            [v] not(properties/readOnly)
+                            [e] then
+                                [e] apply-templates
+                                    [e] select
+                                        [v] .
+                                    [e] mode
+                                        [v] updateByUuid
+                [e] if
+                    [v] exists(methods/method[@name = 'upload'])
+                    [e] then
+                        [e] write-pattern
+                            [v] uploadById
+                        [e] write-pattern
+                            [v] uploadStatusById
+                [e] if
+                    [v] exists(methods/method[properties/language/code])
+                    [e] then
+                        [e] apply-templates
+                            [e] select
+                                [v] methods/method[properties/language/code]
+                            [e] mode
+                                [v] directLanguageCode
+            [g] fim
+                [e] write-pattern
+                    [v] interface-close
+    [e] templates
+        [g] create
+            [e] mode
+                [v] create
+                [e] template
+                    [e] match
+                        [v] class
+                    [e] body
+                        [g] inicio
+                            [e] write-pattern
+                                [v] createStart
+                        [g] corpo
+                            [e] write-pattern
+                                [v] createMiddle-try
+                            [g] catch
+                                [e] write-pattern
+                                    [v] createMiddle-catchStart
+                                //
+                                    [e] apply-templates
+                                        [e] select
+                                            [v] attributes/attribute
+                                        [e] mode
+                                            [v] descricaoExceptionCreate
+                                [e] write-pattern
+                                    [v] createMiddle-catchEnd
+                        [g] fim
+                            [e] write-pattern
+                                [v] createEnd
+            [e] mode
+                [v] descricaoExceptionCreate
+                [e] template
+                    [e] match
+                        [v] attribute
+                    [e] body
+                        [e] write-pattern
+                            [v] descricaoException
+        [g] update
+            [e] mode
+                [v] updateById
+                [e] template
+                    [e] match
+                        [v] class
+                    [e] body
+                        [g] inicio
+                            [e] write-pattern
+                                [v] updateByIdStart
+                        [g] corpo
+                            [g] try
+                                [e] write-pattern
+                                    [v] updateByIdMiddle-try
+                            [g] catch
+                                [e] write-pattern
+                                    [v] Middle-catchStart
+                                //
+                                    [e] apply-templates
+                                        [e] select
+                                            [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                                        [e] mode
+                                            [v] descricaoExceptionCreate
+                                [e] write-pattern
+                                    [v] Middle-catchEnd
+                        [g] fim
+                            [e] write-pattern
+                                [v] updateByIdEnd
+            [e] mode
+                [v] updateByIdErp
+                [e] template
+                    [e] match
+                        [v] class
+                    [e] body
+                        [g] inicio
+                            [e] write-pattern
+                                [v] updateByIdErpStart
+                        [g] corpo
+                            [g] try
+                                [e] write-pattern
+                                    [v] updateByIdErpMiddle-try
+                            [g] catch
+                                [e] write-pattern
+                                    [v] updateByIdErpMiddle-catchStart
+                                //
+                                    [e] apply-templates
+                                        [e] select
+                                            [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                                        [e] mode
+                                            [v] descricaoExceptionCreate
+                                [e] write-pattern
+                                    [v] updateByIdErpMiddle-catchEnd
+                        [g] fim
+                            [e] write-pattern
+                                [v] updateByIdErpEnd
+            [e] mode
+                [v] updateByUuid
+                [e] template
+                    [e] match
+                        [v] class
+                    [e] body
+                        [g] inicio
+                            [e] write-pattern
+                                [v] updateByUuidStart
+                        [g] corpo
+                            [g] try
+                                [e] write-pattern
+                                    [v] updateByUuidMiddle-try
+                            [g] catch
+                                [e] write-pattern
+                                    [v] updateByUuidMiddle-catchStart
+                                //
+                                    [e] apply-templates
+                                        [e] select
+                                            [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                                        [e] mode
+                                            [v] descricaoExceptionCreate
+                                [e] write-pattern
+                                    [v] updateByUuidMiddle-catchEnd
+                        [g] fim
+                            [e] write-pattern
+                                [v] updateByUuidEnd
+        [e] mode
+            [v] queryParameters
+            [e] template
+                [e] match
+                    [v] attribute[@type != $mapNativeTypes/*/value]
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] pacote
+                            [e] expr
+                                [v] substring-before(@type,'.')
+                        [e] var
+                            [v] tipo
+                            [e] expr
+                                [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                        [e] var
+                            [v] class
+                            [e] expr
+                                [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                    [e] if
+                        [v] $class/attributes/attribute[1][@name = 'idErp']
+                        [e] then
+                            [e] write-pattern
+                                [v] queryAnyType-idErp
+                    [e] if
+                        [v] $class/attributes/attribute[@name = 'uuid']
+                        [e] then
+                            [e] write-pattern
+                                [v] queryAnyType-uuid
+                    [e] write-pattern
+                        [v] queryAnyType
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Date/value]
+                [e] body
+                    [e] write-pattern
+                        [v] queryDate
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                [e] body
+                    [e] write-pattern
+                        [v] queryDateTime
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/String/value]
+                [e] body
+                    [e] write-pattern
+                        [v] queryString
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Integer/value]
+                [e] body
+                    [e] write-pattern
+                        [v] queryInteger
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Long/value]
+                [e] body
+                    [e] write-pattern
+                        [v] queryLong
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Double/value]
+                [e] body
+                    [e] write-pattern
+                        [v] queryDouble
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                [e] body
+                    [e] write-pattern
+                        [v] queryBoolean
+        [e] mode
+            [v] attributeParametersWithoutType
+            [e] template
+                [e] match
+                    [v] attribute[@type != $mapNativeTypes/*/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] pacote
+                            [e] expr
+                                [v] substring-before(@type,'.')
+                        [e] var
+                            [v] tipo
+                            [e] expr
+                                [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                        [e] var
+                            [v] class
+                            [e] expr
+                                [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                    [e] if
+                        [v] .[@mode="manyToOne" or @mode="oneToOne" or @mode="composite"]
+                        [e] then
+                            [e] apply-templates
+                                [e] select
+                                    [v] $class/attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode = 'directToField' and (@name = $class/properties/sk/value/text() or properties/searchable)]
+                                [e] parameters
+                                    [e] attributeParent
+                                        [e] expr
+                                            [v] mi:first-lower(@name)
+                                [e] mode
+                                    [v] attributeParametersWithoutType
+                            [e] if
+                                [v] $class/attributes/attribute[1][@name = 'idErp']
+                                [e] then
+                                    [e] write-pattern
+                                        [v] attributeAnyType-idErp-without-type
+                            [e] if
+                                [v] $class/attributes/attribute[@name = 'uuid']
+                                [e] then
+                                    [e] write-pattern
+                                        [v] attributeAnyType-uuid-without-type
+                            [e] write-pattern
+                                [v] attributeAnyType-without-type
+                        [e] else
+                            [e] apply-templates
+                                [e] select
+                                    [v] .
+                                [e] parameters
+                                    [e] nomeTODO
+                                        [v] @TODO_attributeParametersWithTypeString
+                                [e] mode
+                                    [v] assignTODO
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Date/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeDate-without-type
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeDateTime-without-type
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/String/value or @type = $mapNativeTypes/BigString/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeString-without-type
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [y] paramSeparatorLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Binary/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeBinary-without-type
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Integer/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeInteger-without-type
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [y] paramSeparatorLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Long/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeLong-without-type
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [y] paramSeparatorLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Double/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeDouble-without-type
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeBoolean-without-type
+        [g] list
+            [e] mode
+                [v] attributeParametersWithType
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] .[@mode="manyToOne" or @mode="oneToOne" or @mode="composite"]
+                            [e] then
+                                [e] apply-templates
+                                    [e] select
+                                        [v] $class/attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode = 'directToField' and (@name = $class/properties/sk/value/text() or properties/searchable)]
+                                    [e] parameters
+                                        [e] attributeParent
+                                            [e] expr
+                                                [v] mi:first-lower(@name)
+                                    [e] mode
+                                        [v] attributeParametersWithType
+                                [e] if
+                                    [v] $class/attributes/attribute[1][@name = 'idErp']
+                                    [e] then
+                                        [e] write-pattern
+                                            [v] attributeAnyType-idErp-with-type
+                                [e] if
+                                    [v] $class/attributes/attribute[@name = 'uuid']
+                                    [e] then
+                                        [e] write-pattern
+                                            [v] attributeAnyType-uuid-with-type
+                                [e] write-pattern
+                                    [v] attributeAnyType-with-type
+                            [e] else
+                                [e] apply-templates
+                                    [e] select
+                                        [v] .
+                                    [e] parameters
+                                        [e] nomeTODO
+                                            [v] @TODO_attributeParametersWithType
+                                    [e] mode
+                                        [v] assignTODO
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeDate-with-type
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeDateTime-with-type
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value or @type = $mapNativeTypes/BigString/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeString-with-type
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Binary/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeBinary-with-type
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeInteger-with-type
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeLong-with-type
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeDouble-with-type
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeBoolean-with-type
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+            [e] mode
+                [v] listAllExample-attributes
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] contains(@mode,'oneToMany')
+                            [e] then
+                                [e] write-pattern
+                                    [v] withExample-AnyTypeCollection
+                            [e] else-if
+                                [v] @mode = 'directMap'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] withExample-AnyTypeMap
+                            [e] else-if
+                                [v] @mode = 'oneToOne'
+                                [e] then
+                                    [g] start
+                                        [e] write-pattern
+                                            [v] withExample-AnyType-open-start
+                                        [e] apply-templates
+                                            [e] select
+                                                [v] $class/attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode = 'directToField' and (@name = $class/properties/sk/value/text() or properties/searchable)]
+                                            [e] parameters
+                                                [e] attributeParent
+                                                    [e] expr
+                                                        [v] mi:first-lower(@name)
+                                            [e] mode
+                                                [v] clause-sk-searchable
+                                        [e] write-pattern
+                                            [v] withExample-AnyType-close-start
+                                    [g] corpo
+                                        [e] if
+                                            [v] $class/attributes/attribute[1][@name = 'idErp']
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] withExample-AnyType-idErp
+                                        [e] if
+                                            [v] $class/attributes/attribute[@name = 'uuid']
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] withExample-AnyType-uuid
+                                        [e] apply-templates
+                                            [e] select
+                                                [v] $class/attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode = 'directToField' and (@name = $class/properties/sk/value/text() or properties/searchable)]
+                                            [e] parameters
+                                                [e] attributeParent
+                                                    [e] expr
+                                                        [v] mi:first-lower(@name)
+                                            [e] mode
+                                                [v] withExample-AnyType-sk-searchable
+                                    [g] close
+                                        [e] write-pattern
+                                            [v] withExample-AnyType-close
+                            [e] else
+                                [e] apply-templates
+                                    [e] select
+                                        [v] .
+                                    [e] parameters
+                                        [e] nomeTODO
+                                            [v] LIST_ALL_EXAMPLE_ATTRIBUTES
+                                    [e] mode
+                                        [v] assignTODO
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] withExample-Date
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] withExample-DateTime
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value or @type = $mapNativeTypes/BigString/value or @type = $mapNativeTypes/Binary/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] withExample-String
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] withExample-Integer
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] withExample-Long
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] withExample-Double
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] withExample-Boolean
+            [e] mode
+                [v] clause-sk-searchable
+                [e] template
+                    [e] match
+                        [v] attribute
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] clause-sk-searchable
+            [e] mode
+                [v] withExample-AnyType-sk-searchable
+                [e] template
+                    [e] match
+                        [v] attribute
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] withExample-AnyType-sk-searchable
+            [e] mode
+                [v] attributeParametersWithTypeString
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] .[@mode="manyToOne" or @mode="oneToOne" or @mode="composite"]
+                            [e] then
+                                [e] apply-templates
+                                    [e] select
+                                        [v] $class/attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode = 'directToField' and (@name = $class/properties/sk/value/text() or properties/searchable)]
+                                    [e] parameters
+                                        [e] attributeParent
+                                            [e] expr
+                                                [v] mi:first-lower(@name)
+                                    [e] mode
+                                        [v] attributeParametersWithTypeString
+                                [e] if
+                                    [v] $class/attributes/attribute[1][@name = 'idErp']
+                                    [e] then
+                                        [e] write-pattern
+                                            [v] attributeAnyType-idErp-with-type-string
+                                [e] if
+                                    [v] $class/attributes/attribute[@name = 'uuid']
+                                    [e] then
+                                        [e] write-pattern
+                                            [v] attributeAnyType-uuid-with-type-string
+                                [e] write-pattern
+                                    [v] attributeAnyType-with-type-string
+                            [e] else
+                                [e] apply-templates
+                                    [e] select
+                                        [v] .
+                                    [e] parameters
+                                        [e] nomeTODO
+                                            [v] @TODO_attributeParametersWithTypeString
+                                    [e] mode
+                                        [v] assignTODO
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeDate-with-type-string
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeDateTime-with-type-string
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value or @type = $mapNativeTypes/BigString/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeString-with-type-string
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Binary/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeBinary-with-type-string
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeInteger-with-type-string
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeLong-with-type-string
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeDouble-with-type-string
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeBoolean-with-type-string
+                        [e] if
+                            [v] position() != last() or $attributeParent != 'ND'
+                            [e] then
+                                [e] write-pattern
+                                    [v] paramSeparator
+                            [e] else
+                                [e] write-pattern
+                                    [v] breakLine
+        [g] exampleMatcher
+            [e] mode
+                [v] exampleMatcher-attribute
+                [e] template
+                    [e] match
+                        [v] attribute
+                    [e] body
+                        [e] write-pattern
+                            [v] exampleMatcher-attribute-string
+                        [e] if
+                            [v] position() != last()
+                            [e] then
+                                [e] write-pattern
+                                    [v] breakLine
+                            [e] else
+                                [e] write-pattern
+                                    [v] exampleMatcher-attribute-fim
+        [e] mode
+            [v] imports
+            [e] template
+                [e] match
+                    [v] .
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] pacote
+                            [e] expr
+                                [v] substring-before(.,'.')
+                        [e] var
+                            [v] tipo
+                            [e] expr
+                                [v] substring-after(.,'.')
+                        [e] var
+                            [v] class
+                            [e] expr
+                                [v] $classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                    [e] write-pattern
+                        [v] import
+                    [e] write-pattern
+                        [v] import-entityBuilder
+        [g] @TODO
+            [e] mode
+                [v] assignTODO
+                [e] template
+                    [e] match
+                        [v] *
+                    [e] parameters
+                        [e] nomeTODO
+                            [v] NOT_DEFINED
+                    [e] body
+                        [e] write-pattern
+                            [v] declaraTODO
+                        [e] write-pattern
+                            [v] start-labelEstruturaXpath
+                        [e] write-pattern
+                            [v] declara-contadorElementosFilhos
+                        [e] write-pattern
+                            [v] declara-andEspacoEmBranco
+                        [e] write-pattern
+                            [v] declara-nomeDoElemento
+                        [e] if
+                            [v] count(./*)>0
+                            [e] then
+                                [e] write-pattern
+                                    [v] declara-andEspacoEmBranco
+                                [e] apply-templates
+                                    [e] select
+                                        [v] ./*
+                                    [e] parameters
+                                        [e] prefixoNome
+                                            [e] expr
+                                                [v] ''
+                                    [e] mode
+                                        [v] estruturaXpath
+                        [e] write-pattern
+                            [v] end-labelEstruturaXpath
+                        [e] write-pattern
+                            [v] quebraLinha
+            [e] mode
+                [v] estruturaXpath
+                [e] template
+                    [e] match
+                        [v] *
+                    [e] parameters
+                        [e] prefixoNome
+                            [v] NOT_DEFINED
+                    [e] body
+                        [e] if
+                            [v] $prefixoNome != ''
+                            [e] then
+                                [e] write-pattern
+                                    [v] declara-prefixoName
+                        [e] write-pattern
+                            [v] declara-clausulaPositionName
+                        [e] if
+                            [v] .[count(*)=0 and text()]
+                            [e] then
+                                [e] write-pattern
+                                    [v] start-clausulaContZeroText
+                                [e] write-pattern
+                                    [v] declara-clausulaText
+                                [e] write-pattern
+                                    [v] end-clausulaContZeroText
+                            [e] else-if
+                                [v] .[count(*)=0 and not(text())]
+                                [e] then
+                                    [e] write-pattern
+                                        [v] start-clausulaContZeroText
+                                    [e] write-pattern
+                                        [v] declara-clausulaNotTextName
+                                    [e] write-pattern
+                                        [v] end-clausulaContZeroText
+                            [e] else
+                                [e] vars
+                                    [e] var
+                                        [v] valueNameTratar
+                                        [e] expr
+                                            [v] name()
+                                    [e] var
+                                        [v] valueName
+                                        [e] expr
+                                            [v] concat(concat($prefixoNome, $valueNameTratar), '/')
+                                [e] write-pattern
+                                    [v] declara-barra
+                                [e] write-pattern
+                                    [v] declara-contadorElementosFilhos
+                                [e] write-pattern
+                                    [v] declara-andEspacoEmBranco
+                                [e] apply-templates
+                                    [e] select
+                                        [v] ./*
+                                    [e] parameters
+                                        [e] prefixoNome
+                                            [e] expr
+                                                [v] $valueName
+                                    [e] mode
+                                        [v] estruturaXpath
+                        [e] if
+                            [v] position() != last()
+                            [e] then
+                                [e] write-pattern
+                                    [v] declara-andEspacoEmBranco
+        [g] getSpecification
+            [e] mode
+                [v] predicate-attributes
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] contains(@mode,'oneToMany')
+                            [e] then
+                                [e] write-pattern
+                                    [v] withExample-AnyTypeCollection
+                            [e] else-if
+                                [v] @mode = 'directMap'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] withExample-AnyTypeMap
+                            [e] else-if
+                                [v] @mode = 'oneToOne'
+                                [e] then
+                                    [g] start
+                                        [e] write-pattern
+                                            [v] withExample-AnyType-open-start
+                                        [e] apply-templates
+                                            [e] select
+                                                [v] $class/attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode = 'directToField' and (@name = $class/properties/sk/value/text() or properties/searchable)]
+                                            [e] parameters
+                                                [e] attributeParent
+                                                    [e] expr
+                                                        [v] mi:first-lower(@name)
+                                            [e] mode
+                                                [v] clause-sk-searchable
+                                        [e] write-pattern
+                                            [v] withExample-AnyType-close-start
+                                    [g] corpo
+                                        [e] if
+                                            [v] $class/attributes/attribute[1][@name = 'idErp']
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] withExample-AnyType-idErp
+                                        [e] if
+                                            [v] $class/attributes/attribute[@name = 'uuid']
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] withExample-AnyType-uuid
+                                        [e] apply-templates
+                                            [e] select
+                                                [v] $class/attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode = 'directToField' and (@name = $class/properties/sk/value/text() or properties/searchable)]
+                                            [e] parameters
+                                                [e] attributeParent
+                                                    [e] expr
+                                                        [v] mi:first-lower(@name)
+                                            [e] mode
+                                                [v] withExample-AnyType-sk-searchable
+                                    [g] close
+                                        [e] write-pattern
+                                            [v] withExample-AnyType-close
+                            [e] else
+                                [e] apply-templates
+                                    [e] select
+                                        [v] .
+                                    [e] parameters
+                                        [e] nomeTODO
+                                            [v] LIST_ALL_EXAMPLE_ATTRIBUTES
+                                    [e] mode
+                                        [v] assignTODO
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] predicateFromField
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] predicateFromField
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value or @type = $mapNativeTypes/BigString/value or @type = $mapNativeTypes/Binary/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] predicateFromField
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] predicateFromField
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] predicateFromField
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] predicateFromField
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] predicateFromField
+            [e] mode
+                [v] predicateFromEntityField
+                [e] template
+                    [e] match
+                        [v] attribute
+                    [e] parameters
+                        [e] attributeParent
+                            [v] ND
+                    [e] body
+                        [e] write-pattern
+                            [v] predicateFromEntityField
+            [e] mode
+                [v] predicate-from-entity-field
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] @mode = 'oneToOne'
+                            [e] then
+                                [e] write-pattern
+                                    [v] predicateFromEntityId
+                                [e] apply-templates
+                                    [e] select
+                                        [v] $class/attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode = 'directToField' and (@name = $class/properties/sk/value/text() or properties/searchable)]
+                                    [e] parameters
+                                        [e] attributeParent
+                                            [e] expr
+                                                [v] mi:first-lower(@name)
+                                    [e] mode
+                                        [v] predicateFromEntityField
+        [g] directCode
+            [e] mode
+                [v] directLanguageCode
+                [e] template
+                    [e] match
+                        [v] method
+                    [e] body
+                        [e] write-pattern
+                            [v] directCode

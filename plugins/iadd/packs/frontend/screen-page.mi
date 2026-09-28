@@ -1,0 +1,374 @@
+[e] screenPage
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] screenClass
+            [e] select
+                [v] /classes/class[@name = $modelName and @package = $package]
+        [e] objectType
+            [e] expr
+                [v] $screenClass/attributes/attribute[@name = 'object']/@type
+        [e] beanLower
+            [e] expr
+                [v] mi:first-lower($objectType)
+        [e] domainClass
+            [e] select
+                [v] /classes/class[@name = $objectType and @mode = 'bean']
+        [e] hasSearch
+            [e] expr
+                [v] exists($screenClass/search/properties/placeholder/pt/value)
+        [e] hasFacets
+            [e] expr
+                [v] exists($screenClass/filters/filter[properties/type/value = 'faceted'])
+        [e] hasNonFacetedFilters
+            [e] expr
+                [v] exists($screenClass/filters/filter[not(properties/type/value = 'faceted')])
+        [e] facetImports
+            [e] expr
+                [v] string-join(for $f in $screenClass/filters/filter[properties/type/value = 'faceted'] return concat(substring($f/value,2), 'Values, ', substring($f/value,2), 'Labels'), ', ')
+        [e] primaryAction
+            [e] select
+                [v] $screenClass/actions/action[properties/type/value = 'primary'][1]
+        [e] hasPrimaryAction
+            [e] expr
+                [v] exists($primaryAction)
+        [e] primaryActionHasIcon
+            [e] expr
+                [v] exists($primaryAction/properties/icon)
+        [e] primaryActionIconName
+            [e] expr
+                [v] if ($primaryActionHasIcon) then mi:first-upper($primaryAction/properties/icon/value) else ''
+        [e] primaryActionCount
+            [e] expr
+                [v] count($screenClass/actions/action[properties/type/value = 'primary'])
+        [e] hasSecondaryActions
+            [e] expr
+                [v] exists($screenClass/actions/action[properties/type/value = 'secondary'])
+        [e] hasEmptyState
+            [e] expr
+                [v] exists($screenClass/emptyState/properties/message/pt/value)
+        [e] hasPageSize
+            [e] expr
+                [v] exists($screenClass/properties/pageSize/value)
+        [e] hasRowDetail
+            [e] expr
+                [v] exists($screenClass/rowDetail/value)
+        [e] rowDetailComponent
+            [e] expr
+                [v] string($screenClass/rowDetail/value)
+    [e] fragments
+        [e] filterAttr
+            [v] substring(value,2)
+        [e] filterTitle
+            [v] string(for $a in substring(value,2) return $domainClass/attributes/attribute[@name = $a]/properties/title/pt/value)
+    [e] patterns
+        [e] header-comment
+            [v] // GERADO por: mi generate <projeto> frontend screenPage modelName={{ @name }} package={{ @package }}
+            [v] // Fonte: mapa de tela {{ @name }} + dominio {{ $objectType }}. NAO editar a mao — rode o gerador.
+        [e] import-useState
+            [v] import { useState } from "react"
+        [e] import-icon
+            [v] import { {{ $primaryActionIconName }} } from "lucide-react"
+        [e] import-button
+            [v] import { Button } from "@/components/ui/button"
+        [e] import-dialog
+            [v] import {
+            [v]   Dialog,
+            [v]   DialogContent,
+            [v]   DialogHeader,
+            [v]   DialogTitle,
+            [v]   DialogTrigger,
+            [v] } from "@/components/ui/dialog"
+        [e] import-datatable-facet
+            [v] import { DataTable, type Facet } from "@/runtime/data-table"
+        [e] import-datatable-plain
+            [v] import { DataTable } from "@/runtime/data-table"
+        [e] import-hook
+            [v] import { use{{ $objectType }}s } from "@/gen/api/{{ $beanLower }}"
+        [e] import-hook-with-create
+            [v] import { use{{ $objectType }}s, useCriar{{ $objectType }} } from "@/gen/api/{{ $beanLower }}"
+        [e] import-schemas
+            [v] import { {{ $facetImports }} } from "@/gen/schemas/{{ $beanLower }}"
+        [e] import-columns
+            [v] import { {{ $beanLower }}Columns } from "./columns"
+        [e] import-row-detail
+            [v] import { {{ $rowDetailComponent }} } from "./{{ $rowDetailComponent }}"
+        [e] import-toast
+            [v] import { toast } from "sonner"
+        [e] import-create-hook
+            [v] import { useCriar{{ $objectType }} } from "@/gen/api/{{ $beanLower }}"
+        [e] import-form
+            [v] import { {{ $primaryAction/properties/opens/value }}Form, type {{ $primaryAction/properties/opens/value }}Values } from "./{{ $primaryAction/properties/opens/value }}"
+        [e] create-hook-line
+            [v]   const criar = useCriar{{ $objectType }}()
+        [e] handle-create
+            [v]   async function handleCreate(values: {{ $primaryAction/properties/opens/value }}Values) {
+            [v]     await criar.mutateAsync(values)
+            [v]     toast.success("{{ $objectType }} criado com sucesso.")
+            [v]     setOpen(false)
+            [v]   }
+        [e] blankLine
+            [v]
+        [e] facet-item
+            [v]   { columnId: "{{ f#[filterAttr] }}", title: "{{ f#[filterTitle] }}", options: {{ f#[filterAttr] }}Values.map((v) => ({ value: v, label: {{ f#[filterAttr] }}Labels[v] })) },
+        [e] filter-todo-unsupported
+            [v] // @TODO filtro "{{ f#[filterAttr] }}" com type != faceted nao suportado no v1 do screenPage
+        [e] primary-action-count-todo
+            [v] // @TODO {{ $primaryActionCount }} acoes type=primary encontradas neste mapa de tela — v1 do screenPage usa somente a primeira ({{ $primaryAction/value }})
+        [e] secondary-actions-todo
+            [v] // @TODO acoes type=secondary nao tratadas no v1 do screenPage
+        [e] facets-start
+            [v] const facets: Facet[] = [
+        [e] facets-end
+            [v] ]
+        [e] export-start
+            [v] export function {{ @name }}Screen() {
+        [e] query-line
+            [v]   const query = use{{ $objectType }}s()
+        [e] open-state-line
+            [v]   const [open, setOpen] = useState(false)
+        [e] return-start
+            [v]   return (
+        [e] main-start
+            [v]     <main className="mx-auto max-w-6xl p-6">
+        [e] header-div-start
+            [v]       <div className="mb-6 flex items-center justify-between">
+        [e] title-line
+            [v]         <h1 className="text-2xl font-semibold tracking-tight">{{ properties/title/pt/value }}</h1>
+        [e] dialog-start
+            [v]         <Dialog open={open} onOpenChange={setOpen}>
+            [v]           <DialogTrigger asChild>
+            [v]             <Button>
+        [e] dialog-button-icon
+            [v]               <{{ $primaryActionIconName }} className="size-4" aria-hidden />
+        [e] dialog-button-label
+            [v]               {{ $primaryAction/properties/label/pt/value }}
+        [e] dialog-content
+            [v]             </Button>
+            [v]           </DialogTrigger>
+            [v]           <DialogContent>
+            [v]             <DialogHeader>
+            [v]               <DialogTitle>{{ $primaryAction/properties/label/pt/value }}</DialogTitle>
+            [v]             </DialogHeader>
+            [v]             <{{ $primaryAction/properties/opens/value }}Form onSubmit={handleCreate} isSubmitting={criar.isPending} />
+            [v]           </DialogContent>
+            [v]         </Dialog>
+        [e] header-div-end
+            [v]       </div>
+        [e] datatable-start
+            [v]       <DataTable
+        [e] columns-prop
+            [y]         columns={
+            [v] {{ $beanLower }}Columns}
+        [e] query-prop
+            [v]         query={query}
+        [e] page-size-prop
+            [v]         pageSize={ {{ properties/pageSize/value }} }
+        [e] search-prop
+            [v]         searchPlaceholder="{{ search/properties/placeholder/pt/value }}"
+        [e] facets-prop
+            [v]         facets={facets}
+        [e] empty-prop
+            [v]         empty={
+            [y]           { message: "
+            [y] {{ emptyState/properties/message/pt/value }}
+            [v] " }
+            [v]         }
+        [e] row-detail-prop
+            [v]         renderRowDetail={({{ $beanLower }}) => <{{ $rowDetailComponent }} {{ $beanLower }}={ {{ $beanLower }}} />}
+        [e] datatable-end
+            [v]       />
+        [e] main-end
+            [v]     </main>
+        [e] return-end
+            [v]   )
+        [e] function-end
+            [v] }
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [e] write-pattern
+                [v] header-comment
+            [e] if
+                [v] $hasPrimaryAction
+                [e] then
+                    [e] write-pattern
+                        [v] import-useState
+            [e] if
+                [v] $hasPrimaryAction and $primaryActionHasIcon
+                [e] then
+                    [e] write-pattern
+                        [v] import-icon
+            [e] if
+                [v] $hasPrimaryAction
+                [e] then
+                    [e] write-pattern
+                        [v] import-toast
+                    [e] write-pattern
+                        [v] import-button
+                    [e] write-pattern
+                        [v] import-dialog
+            [e] if
+                [v] $hasFacets
+                [e] then
+                    [e] write-pattern
+                        [v] import-datatable-facet
+                [e] else
+                    [e] write-pattern
+                        [v] import-datatable-plain
+            [e] if
+                [v] $hasPrimaryAction
+                [e] then
+                    [e] write-pattern
+                        [v] import-hook-with-create
+                [e] else
+                    [e] write-pattern
+                        [v] import-hook
+            [e] if
+                [v] $hasFacets
+                [e] then
+                    [e] write-pattern
+                        [v] import-schemas
+            [e] write-pattern
+                [v] import-columns
+            [e] if
+                [v] $hasRowDetail
+                [e] then
+                    [e] write-pattern
+                        [v] import-row-detail
+            [e] if
+                [v] $hasPrimaryAction
+                [e] then
+                    [e] write-pattern
+                        [v] import-form
+            [e] write-pattern
+                [v] blankLine
+            [e] if
+                [v] $hasNonFacetedFilters
+                [e] then
+                    [e] apply-templates
+                        [e] select
+                            [v] filters/filter[not(properties/type/value = 'faceted')]
+                        [e] mode
+                            [v] otherFilter
+            [e] if
+                [v] $primaryActionCount > 1
+                [e] then
+                    [e] write-pattern
+                        [v] primary-action-count-todo
+            [e] if
+                [v] $hasSecondaryActions
+                [e] then
+                    [e] write-pattern
+                        [v] secondary-actions-todo
+            [e] if
+                [v] $hasFacets
+                [e] then
+                    [e] write-pattern
+                        [v] facets-start
+                    [e] apply-templates
+                        [e] select
+                            [v] filters/filter[properties/type/value = 'faceted']
+                        [e] mode
+                            [v] facetFilter
+                    [e] write-pattern
+                        [v] facets-end
+                    [e] write-pattern
+                        [v] blankLine
+            [e] write-pattern
+                [v] export-start
+            [e] write-pattern
+                [v] query-line
+            [e] if
+                [v] $hasPrimaryAction
+                [e] then
+                    [e] write-pattern
+                        [v] open-state-line
+                    [e] write-pattern
+                        [v] create-hook-line
+                    [e] write-pattern
+                        [v] handle-create
+            [e] write-pattern
+                [v] return-start
+            [e] write-pattern
+                [v] main-start
+            [e] write-pattern
+                [v] header-div-start
+            [e] write-pattern
+                [v] title-line
+            [e] if
+                [v] $hasPrimaryAction
+                [e] then
+                    [e] write-pattern
+                        [v] dialog-start
+                    [e] if
+                        [v] $primaryActionHasIcon
+                        [e] then
+                            [e] write-pattern
+                                [v] dialog-button-icon
+                    [e] write-pattern
+                        [v] dialog-button-label
+                    [e] write-pattern
+                        [v] dialog-content
+            [e] write-pattern
+                [v] header-div-end
+            [e] write-pattern
+                [v] datatable-start
+            [e] write-pattern
+                [v] columns-prop
+            [e] write-pattern
+                [v] query-prop
+            [e] if
+                [v] $hasPageSize
+                [e] then
+                    [e] write-pattern
+                        [v] page-size-prop
+            [e] if
+                [v] $hasSearch
+                [e] then
+                    [e] write-pattern
+                        [v] search-prop
+            [e] if
+                [v] $hasFacets
+                [e] then
+                    [e] write-pattern
+                        [v] facets-prop
+            [e] if
+                [v] $hasEmptyState
+                [e] then
+                    [e] write-pattern
+                        [v] empty-prop
+            [e] if
+                [v] $hasRowDetail
+                [e] then
+                    [e] write-pattern
+                        [v] row-detail-prop
+            [e] write-pattern
+                [v] datatable-end
+            [e] write-pattern
+                [v] main-end
+            [e] write-pattern
+                [v] return-end
+            [e] write-pattern
+                [v] function-end
+    [e] templates
+        [e] mode
+            [v] facetFilter
+            [e] template
+                [e] match
+                    [v] filter
+                [e] body
+                    [e] write-pattern
+                        [v] facet-item
+        [e] mode
+            [v] otherFilter
+            [e] template
+                [e] match
+                    [v] filter
+                [e] body
+                    [e] write-pattern
+                        [v] filter-todo-unsupported

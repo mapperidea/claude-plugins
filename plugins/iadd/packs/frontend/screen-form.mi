@@ -1,0 +1,322 @@
+[e] screenForm
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] mapNativeTypes
+            [e] select
+                [v] //maps/mapNativeTypes
+        [e] screenClass
+            [e] select
+                [v] /classes/class[@name = $modelName and @package = $package]
+        [e] objectType
+            [e] expr
+                [v] $screenClass/attributes/attribute[@name = 'object']/@type
+        [e] beanLower
+            [e] expr
+                [v] mi:first-lower($objectType)
+        [e] domainClass
+            [e] select
+                [v] /classes/class[@name = $objectType and @mode = 'bean']
+        [e] screenLower
+            [e] expr
+                [v] mi:first-lower($modelName)
+        [e] primaryAction
+            [e] select
+                [v] $screenClass/actions/action[properties/type/value = 'primary'][1]
+        [e] submitLabel
+            [e] expr
+                [v] if (exists($primaryAction/properties/label/pt/value)) then string($primaryAction/properties/label/pt/value) else 'Salvar'
+        [e] enumFieldImports
+            [e] expr
+                [v] string-join(distinct-values(for $f in $screenClass/form//field return if (exists($domainClass/attributes/attribute[@name = substring($f/value,2)]/properties/values)) then concat(substring($f/value,2), 'Values, ', substring($f/value,2), 'Labels') else ()), ', ')
+    [e] fragments
+        [e] attr
+            [v] substring(value,2)
+        [e] label
+            [v] mi:if-else(exists(properties/label/pt/value), string(properties/label/pt/value), string(for $a in substring(value,2) return $domainClass/attributes/attribute[@name = $a]/properties/title/pt/value))
+        [e] firstEnumValue
+            [v] string(for $a in substring(value,2) return name($domainClass/attributes/attribute[@name = $a]/properties/values/*[1]))
+    [e] patterns
+        [e] header-comment
+            [v] // GERADO por: mi generate <projeto> frontend screenForm modelName={{ @name }} package={{ @package }}
+            [v] // Fonte: mapa de tela {{ @name }} + dominio {{ $objectType }}. NAO editar a mao — rode o gerador.
+        [e] import-zod
+            [v] import { z } from "zod"
+        [e] import-schema
+            [v] import { {{ $beanLower }}Schema{{ mi:if-else($enumFieldImports != '', concat(', ', $enumFieldImports), '') }} } from "@/gen/schemas/{{ $beanLower }}"
+        [e] import-autoform
+            [v] import { AutoForm, type FieldSpec } from "@/runtime/auto-form"
+        [e] blankLine
+            [v]
+        [e] pick-start
+            [v] export const {{ $screenLower }}Schema = {{ $beanLower }}Schema.pick({
+        [e] pick-end
+            [v] })
+        [e] pick-line
+            [v]   {{ f#[attr] }}: true,
+        [e] pick-todo-join
+            [v]   // @TODO campo relacionado (join) nao suportado no pick do schema de formulario: {{ value }}
+        [e] pick-todo-unknown
+            [v]   // @TODO atributo "{{ f#[attr] }}" nao encontrado no dominio {{ $objectType }} (field {{ value }})
+        [e] values-type
+            [v] export type {{ @name }}Values = z.infer<typeof {{ $screenLower }}Schema>
+        [e] fields-start
+            [v] const {{ $screenLower }}Fields: FieldSpec<{{ @name }}Values>[] = [
+        [e] fields-end
+            [v] ]
+        [e] fieldspec-text
+            [v]   { name: "{{ f#[attr] }}", label: "{{ f#[label] }}", kind: "text" },
+        [e] fieldspec-select
+            [v]   { name: "{{ f#[attr] }}", label: "{{ f#[label] }}", kind: "select", options: {{ f#[attr] }}Values.map((v) => ({ value: v, label: {{ f#[attr] }}Labels[v] })) },
+        [e] fieldspec-textarea
+            [v]   { name: "{{ f#[attr] }}", label: "{{ f#[label] }}", kind: "textarea" },
+        [e] fieldspec-switch
+            [v]   { name: "{{ f#[attr] }}", label: "{{ f#[label] }}", kind: "switch" },
+        [e] fieldspec-number
+            [v]   { name: "{{ f#[attr] }}", label: "{{ f#[label] }}", kind: "number" },
+        [e] fieldspec-todo-join
+            [v]   // @TODO campo relacionado (join) nao suportado no FieldSpec: {{ value }}
+        [e] fieldspec-todo-unknown
+            [v]   // @TODO atributo "{{ f#[attr] }}" nao encontrado no dominio {{ $objectType }} (field {{ value }})
+        [e] defaults-start
+            [v] const {{ $screenLower }}Defaults = {
+        [e] defaults-end
+            [v] } as const
+        [e] default-text-line
+            [v]   {{ f#[attr] }}: "",
+        [e] default-enum-line
+            [v]   {{ f#[attr] }}: "{{ f#[firstEnumValue] }}",
+        [e] default-boolean-line
+            [v]   {{ f#[attr] }}: false,
+        [e] default-number-line
+            [v]   {{ f#[attr] }}: 0,
+        [e] default-todo-join
+            [v]   // @TODO campo relacionado (join) nao suportado no default do formulario: {{ value }}
+        [e] default-todo-unknown
+            [v]   // @TODO atributo "{{ f#[attr] }}" nao encontrado no dominio {{ $objectType }} (field {{ value }})
+        [e] component-start
+            [v] export function {{ @name }}Form({
+            [v]   onSubmit,
+            [v]   isSubmitting,
+            [v]   values,
+            [v] }: {
+            [v]   onSubmit: (values: {{ @name }}Values) => void | Promise<void>
+            [v]   isSubmitting?: boolean
+            [v]   values?: {{ @name }}Values
+            [v] }) {
+            [v]   return (
+            [v]     <AutoForm
+        [e] component-schema-prop
+            [y]       schema={
+            [v] {{ $screenLower }}Schema}
+        [e] component-fields-prop
+            [y]       fields={
+            [v] {{ $screenLower }}Fields}
+        [e] component-defaults-prop
+            [y]       defaultValues={
+            [v] {{ $screenLower }}Defaults}
+        [e] component-values-prop
+            [y]       values={
+            [v] values}
+        [e] component-onsubmit-prop
+            [v]       onSubmit={onSubmit}
+        [e] component-submitlabel-prop
+            [v]       submitLabel="{{ $submitLabel }}"
+        [e] component-issubmitting-prop
+            [v]       isSubmitting={isSubmitting}
+        [e] component-end
+            [v]     />
+            [v]   )
+            [v] }
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [e] write-pattern
+                [v] header-comment
+            [e] write-pattern
+                [v] import-zod
+            [e] write-pattern
+                [v] import-schema
+            [e] write-pattern
+                [v] import-autoform
+            [e] write-pattern
+                [v] blankLine
+            [e] write-pattern
+                [v] pick-start
+            [e] apply-templates
+                [e] select
+                    [v] form//field
+                [e] mode
+                    [v] pickAttr
+            [e] write-pattern
+                [v] pick-end
+            [e] write-pattern
+                [v] blankLine
+            [e] write-pattern
+                [v] values-type
+            [e] write-pattern
+                [v] blankLine
+            [e] write-pattern
+                [v] fields-start
+            [e] apply-templates
+                [e] select
+                    [v] form//field
+                [e] mode
+                    [v] fieldSpec
+            [e] write-pattern
+                [v] fields-end
+            [e] write-pattern
+                [v] blankLine
+            [e] write-pattern
+                [v] defaults-start
+            [e] apply-templates
+                [e] select
+                    [v] form//field
+                [e] mode
+                    [v] fieldDefault
+            [e] write-pattern
+                [v] defaults-end
+            [e] write-pattern
+                [v] blankLine
+            [e] write-pattern
+                [v] component-start
+            [e] write-pattern
+                [v] component-schema-prop
+            [e] write-pattern
+                [v] component-fields-prop
+            [e] write-pattern
+                [v] component-defaults-prop
+            [e] write-pattern
+                [v] component-values-prop
+            [e] write-pattern
+                [v] component-onsubmit-prop
+            [e] write-pattern
+                [v] component-submitlabel-prop
+            [e] write-pattern
+                [v] component-issubmitting-prop
+            [e] write-pattern
+                [v] component-end
+    [e] templates
+        [e] mode
+            [v] pickAttr
+            [e] template
+                [e] match
+                    [v] field
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] attr
+                            [e] expr
+                                [v] substring(value,2)
+                        [e] var
+                            [v] domAttr
+                            [e] expr
+                                [v] $domainClass/attributes/attribute[@name = $attr]
+                    [e] if
+                        [v] contains($attr,'.')
+                        [e] then
+                            [e] write-pattern
+                                [v] pick-todo-join
+                        [e] else-if
+                            [v] not(exists($domAttr))
+                            [e] then
+                                [e] write-pattern
+                                    [v] pick-todo-unknown
+                        [e] else
+                            [e] write-pattern
+                                [v] pick-line
+        [e] mode
+            [v] fieldSpec
+            [e] template
+                [e] match
+                    [v] field
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] attr
+                            [e] expr
+                                [v] substring(value,2)
+                        [e] var
+                            [v] domAttr
+                            [e] expr
+                                [v] $domainClass/attributes/attribute[@name = $attr]
+                    [e] if
+                        [v] contains($attr,'.')
+                        [e] then
+                            [e] write-pattern
+                                [v] fieldspec-todo-join
+                        [e] else-if
+                            [v] not(exists($domAttr))
+                            [e] then
+                                [e] write-pattern
+                                    [v] fieldspec-todo-unknown
+                        [e] else-if
+                            [v] exists($domAttr/properties/values)
+                            [e] then
+                                [e] write-pattern
+                                    [v] fieldspec-select
+                        [e] else-if
+                            [v] $domAttr/@type = $mapNativeTypes/BigString/value
+                            [e] then
+                                [e] write-pattern
+                                    [v] fieldspec-textarea
+                        [e] else-if
+                            [v] $domAttr/@type = $mapNativeTypes/Boolean/value
+                            [e] then
+                                [e] write-pattern
+                                    [v] fieldspec-switch
+                        [e] else-if
+                            [v] $domAttr/@type = ($mapNativeTypes/Integer/value, $mapNativeTypes/Long/value, $mapNativeTypes/Double/value)
+                            [e] then
+                                [e] write-pattern
+                                    [v] fieldspec-number
+                        [e] else
+                            [e] write-pattern
+                                [v] fieldspec-text
+        [e] mode
+            [v] fieldDefault
+            [e] template
+                [e] match
+                    [v] field
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] attr
+                            [e] expr
+                                [v] substring(value,2)
+                        [e] var
+                            [v] domAttr
+                            [e] expr
+                                [v] $domainClass/attributes/attribute[@name = $attr]
+                    [e] if
+                        [v] contains($attr,'.')
+                        [e] then
+                            [e] write-pattern
+                                [v] default-todo-join
+                        [e] else-if
+                            [v] not(exists($domAttr))
+                            [e] then
+                                [e] write-pattern
+                                    [v] default-todo-unknown
+                        [e] else-if
+                            [v] exists($domAttr/properties/values)
+                            [e] then
+                                [e] write-pattern
+                                    [v] default-enum-line
+                        [e] else-if
+                            [v] $domAttr/@type = $mapNativeTypes/Boolean/value
+                            [e] then
+                                [e] write-pattern
+                                    [v] default-boolean-line
+                        [e] else-if
+                            [v] $domAttr/@type = ($mapNativeTypes/Integer/value, $mapNativeTypes/Long/value, $mapNativeTypes/Double/value)
+                            [e] then
+                                [e] write-pattern
+                                    [v] default-number-line
+                        [e] else
+                            [e] write-pattern
+                                [v] default-text-line

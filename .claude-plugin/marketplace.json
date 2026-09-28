@@ -1,0 +1,24 @@
+{
+  "name": "mapperidea-iadd",
+  "description": "Agent Kit e IADD — semente para autorar agentes Claude Code e para desenvolver software com Mapper Idea",
+  "owner": {
+    "name": "Clovis Wichoski"
+  },
+  "plugins": [
+    {
+      "name": "agent-kit",
+      "version": "0.3.0",
+      "source": "./plugins/agent-kit",
+      "description": "Como se autora um agente Claude Code bom: wizard agent-creator, extrator de conhecimento, arquétipos e convenções de autoria. Serve a qualquer repositório."
+    },
+    {
+      "name": "iadd",
+      "version": "0.3.0",
+      "source": "./plugins/iadd",
+      "description": "IA Driven Development com Mapper Idea: o método escrito, a tríade de agentes, a skill de sintaxe .mi e os packs de geradores por stack."
+    }
+  ],
+  "metadata": {
+    "homepage": "https://mapperidea.io"
+  }
+}

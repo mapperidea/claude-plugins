@@ -1,0 +1,67 @@
+[p] com.exemplo
+    @
+        [e] title
+            [e] pt
+                [v] Exemplo mínimo IADD
+            [e] en
+                [v] Minimal IADD example
+        [e] description
+            [e] pt
+                [v] Mapa mínimo para aprender autoria de gerador. Não é domínio real de
+                  | nenhum projeto: 3 entidades, um enum, uma relação fraca e uma referência.
+            [e] en
+                [v] Minimal map for learning generator authoring. Not any project's real
+                  | domain: 3 entities, one enum, one weak relation and one reference.
+    config
+        structVersion
+            2
+        [e] mapperidea
+            [e] maps
+                [e] mapNativeTypes
+                    [e] String
+                        [v] Texto
+                        [v] String
+                        [v] varchar
+                    [e] BigString
+                        [v] TextoLongo
+                    [e] Integer
+                        [v] Inteiro
+                        [v] int
+                    [e] Long
+                        [v] Long
+                    [e] Double
+                        [v] Double
+                        [v] ValorMonetario
+                        [v] decimal
+                    [e] Boolean
+                        [v] Boolean
+                    [e] Date
+                        [v] Data
+                    [e] DateTime
+                        [v] DataHora
+                    [e] Binary
+                        [v] Binary
+            [e] generators
+                [e] struct
+                    #
+                        generators/struct.mi
+                [e] typescript
+                    [e] type
+                        #
+                            generators/ts-type.mi
+    [p] dominio
+        @
+            [e] title
+                [e] pt
+                    [v] Domínio
+                [e] en
+                    [v] Domain
+        [b] Pedido
+            #
+                dominio/Pedido.mi
+        [b] ItemPedido
+            #
+                dominio/ItemPedido.mi
+        [b] Cliente
+            #
+                dominio/Cliente.mi

@@ -1,0 +1,112 @@
+[e] type
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] mapNativeTypes
+            [e] select
+                [v] //maps/mapNativeTypes
+    [e] fragments
+        [e] optionalMark
+            [v] mi:if-else(exists(properties/required), '', '?')
+    [e] patterns
+        [e] header
+            [v] // GERADO por: mi generate exemplar typescript type modelName={{ @name }}
+            [v] // Nao editar a mao — a saida e sobrescrita por inteiro a cada geracao.
+        [e] blankLine
+            [v] {{ '' }}
+        [e] interface-start
+            [v] export interface {{ @name }} {
+        [e] interface-end
+            [v] }
+        [g] fields
+            [e] field-enum
+                [v]   {{ @name }}{{ f#[optionalMark] }}: {{ string-join(for $v in properties/values/* return concat('"', name($v), '"'), ' | ') }}
+            [e] field-string
+                [v]   {{ @name }}{{ f#[optionalMark] }}: string
+            [e] field-number
+                [v]   {{ @name }}{{ f#[optionalMark] }}: number
+            [e] field-boolean
+                [v]   {{ @name }}{{ f#[optionalMark] }}: boolean
+            [e] field-list
+                [v]   {{ @name }}{{ f#[optionalMark] }}: {{ @type }}[]
+            [e] field-ref
+                [v]   {{ @name }}{{ f#[optionalMark] }}: {{ @type }}
+            [e] field-todo
+                [v]   // @TODO tipo nao tratado: {{ @name }} (type={{ @type }} mode={{ @mode }})
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [e] write-pattern
+                [v] header
+            [e] write-pattern
+                [v] blankLine
+            [e] write-pattern
+                [v] interface-start
+            [e] apply-templates
+                [e] select
+                    [v] attributes/attribute
+                [e] mode
+                    [v] fields
+            [e] write-pattern
+                [v] interface-end
+    [e] templates
+        [e] mode
+            [v] fields
+            [e] template
+                [e] match
+                    [v] attribute[exists(properties/values)]
+                [e] body
+                    [e] write-pattern
+                        [v] field-enum
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/String/value and not(exists(properties/values))]
+                [e] body
+                    [e] write-pattern
+                        [v] field-string
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/BigString/value]
+                [e] body
+                    [e] write-pattern
+                        [v] field-string
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Date/value or @type = $mapNativeTypes/DateTime/value]
+                [e] body
+                    [e] write-pattern
+                        [v] field-string
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Integer/value or @type = $mapNativeTypes/Long/value or @type = $mapNativeTypes/Double/value]
+                [e] body
+                    [e] write-pattern
+                        [v] field-number
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                [e] body
+                    [e] write-pattern
+                        [v] field-boolean
+            [e] template
+                [e] match
+                    [v] attribute[@mode = 'oneToMany']
+                [e] body
+                    [e] write-pattern
+                        [v] field-list
+            [e] template
+                [e] match
+                    [v] attribute[@mode != 'directToField' and @mode != 'oneToMany']
+                [e] body
+                    [e] write-pattern
+                        [v] field-ref
+            [e] template
+                [e] match
+                    [v] attribute
+                [e] body
+                    [e] write-pattern
+                        [v] field-todo

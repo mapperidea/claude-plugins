@@ -1,0 +1,206 @@
+[e] zodSchema
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] mapNativeTypes
+            [e] select
+                [v] //maps/mapNativeTypes
+        [e] classes
+            [e] select
+                [v] /classes
+    [e] fragments
+        [e] optionalSuffix
+            [v] mi:if-else(exists(properties/required), '', '.optional()')
+    [e] patterns
+        [e] header
+            [v] // GERADO por: mi generate <projeto> frontend zodSchema modelName={{ @name }}
+            [v] // Fonte: mapa de dominio {{ @name }}. NAO editar a mao — rode o gerador.
+            [v] import { z } from "zod"
+        [e] blankLine
+            [v]
+        [g] enum
+            [e] enum-values-start
+                [v] export const {{ @name }}Values = [
+            [e] enum-value
+                [v]   "{{ name(.) }}",
+            [e] enum-values-end
+                [v] ] as const
+            [e] enum-labels-start
+                [v] export const {{ @name }}Labels: Record<(typeof {{ @name }}Values)[number], string> = {
+            [e] enum-label
+                [v]   {{ name(.) }}: "{{ title/pt/value }}",
+            [e] enum-labels-end
+                [v] }
+                [v]
+        [e] schema-start
+            [v] export const {{ mi:first-lower(@name) }}Schema = z.object({
+        [e] schema-end
+            [v] })
+            [v]
+            [v] export type {{ @name }} = z.infer<typeof {{ mi:first-lower(@name) }}Schema>
+        [g] fields
+            [e] field-string-enum
+                [v]   {{ @name }}: z.enum({{ @name }}Values){{ f#[optionalSuffix] }},
+            [e] field-string
+                [v]   {{ @name }}: z.string().max({{ mi:if-else(exists(@typeParameter), @typeParameter, '255') }}){{ f#[optionalSuffix] }},
+            [e] field-bigstring
+                [v]   {{ @name }}: z.string(){{ f#[optionalSuffix] }},
+            [e] field-integer
+                [v]   {{ @name }}: z.number().int(){{ f#[optionalSuffix] }},
+            [e] field-double
+                [v]   {{ @name }}: z.number(){{ f#[optionalSuffix] }},
+            [e] field-boolean
+                [v]   {{ @name }}: z.boolean(){{ f#[optionalSuffix] }},
+            [e] field-date
+                [v]   {{ @name }}: z.string(){{ f#[optionalSuffix] }},
+            [e] field-relation-enum
+                [v]   {{ @name }}: z.object({ id: z.string().optional(), {{ $enumAttrName }}: z.string().optional() }).passthrough(){{ f#[optionalSuffix] }},
+            [e] field-relation-passthrough
+                [v]   {{ @name }}: z.object({ id: z.string().optional() }).passthrough(){{ f#[optionalSuffix] }},
+            [e] field-todo
+                [v]   // @TODO tipo nao tratado: {{ @name }} (type={{ @type }} mode={{ @mode }})
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [e] write-pattern
+                [v] header
+            [e] write-pattern
+                [v] blankLine
+            [e] apply-templates
+                [e] select
+                    [v] attributes/attribute[@mode = 'directToField' and exists(properties/values)]
+                [e] mode
+                    [v] enums
+            [e] write-pattern
+                [v] schema-start
+            [e] apply-templates
+                [e] select
+                    [v] attributes/attribute
+                [e] mode
+                    [v] fields
+            [e] write-pattern
+                [v] schema-end
+    [e] templates
+        [e] mode
+            [v] enums
+            [e] template
+                [e] match
+                    [v] attribute
+                [e] body
+                    [e] write-pattern
+                        [v] enum-values-start
+                    [e] apply-templates
+                        [e] select
+                            [v] properties/values/*
+                        [e] mode
+                            [v] enum-value
+                    [e] write-pattern
+                        [v] enum-values-end
+                    [e] write-pattern
+                        [v] enum-labels-start
+                    [e] apply-templates
+                        [e] select
+                            [v] properties/values/*
+                        [e] mode
+                            [v] enum-label
+                    [e] write-pattern
+                        [v] enum-labels-end
+        [e] mode
+            [v] enum-value
+            [e] template
+                [e] match
+                    [v] *
+                [e] body
+                    [e] write-pattern
+                        [v] enum-value
+        [e] mode
+            [v] enum-label
+            [e] template
+                [e] match
+                    [v] *
+                [e] body
+                    [e] write-pattern
+                        [v] enum-label
+        [e] mode
+            [v] fields
+            [e] template
+                [e] match
+                    [v] attribute[exists(properties/values)]
+                [e] body
+                    [e] write-pattern
+                        [v] field-string-enum
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/String/value and not(exists(properties/values))]
+                [e] body
+                    [e] write-pattern
+                        [v] field-string
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/BigString/value]
+                [e] body
+                    [e] write-pattern
+                        [v] field-bigstring
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Integer/value]
+                [e] body
+                    [e] write-pattern
+                        [v] field-integer
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Long/value]
+                [e] body
+                    [e] write-pattern
+                        [v] field-integer
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Double/value]
+                [e] body
+                    [e] write-pattern
+                        [v] field-double
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                [e] body
+                    [e] write-pattern
+                        [v] field-boolean
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Date/value]
+                [e] body
+                    [e] write-pattern
+                        [v] field-date
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                [e] body
+                    [e] write-pattern
+                        [v] field-date
+            [e] template
+                [e] match
+                    [v] attribute[@mode != 'directToField']
+                [e] body
+                    [e] write-pattern
+                        [v] field-relation-passthrough
+            [e] template
+                [e] match
+                    [v] attribute[@mode != 'directToField' and exists($classes/class[@name=current()/@type]/attributes/attribute[exists(properties/values)])]
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] enumAttrName
+                            [e] expr
+                                [v] $classes/class[@name=current()/@type]/attributes/attribute[exists(properties/values)][1]/@name
+                    [e] write-pattern
+                        [v] field-relation-enum
+            [e] template
+                [e] match
+                    [v] attribute
+                [e] body
+                    [e] write-pattern
+                        [v] field-todo

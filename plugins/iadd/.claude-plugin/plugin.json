@@ -1,0 +1,16 @@
+{
+  "name": "iadd",
+  "version": "0.3.0",
+  "description": "IA Driven Development com Mapper Idea: o pipeline história → mapa de negócio → mapa de arquitetura → código, a tríade de agentes (domain-mapper, generator-author, cli-runner), a skill de sintaxe .mi e os packs de geradores por stack.",
+  "author": {
+    "name": "Clovis Wichoski"
+  },
+  "keywords": [
+    "mapper-idea",
+    "code-generation",
+    "iadd",
+    "ddd",
+    "dsl"
+  ],
+  "license": "LicenseRef-MapperIdea"
+}

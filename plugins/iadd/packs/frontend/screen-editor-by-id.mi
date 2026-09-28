@@ -1,0 +1,72 @@
+[e] screenEditorById
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] screenClass
+            [e] select
+                [v] /classes/class[@name = $modelName and @package = $package]
+        [e] objectType
+            [e] expr
+                [v] $screenClass/attributes/attribute[@name = 'object']/@type
+        [e] beanLower
+            [e] expr
+                [v] mi:first-lower($objectType)
+        [e] hasDescription
+            [e] expr
+                [v] exists($screenClass/properties/description/pt/value)
+    [e] patterns
+        [e] page-head
+            [v] // GERADO por: mi generate <projeto> frontend screenEditorById modelName={{ @name }} package={{ @package }}
+            [v] // Fonte: mapa de tela {{ @name }} + dominio {{ $objectType }}. NAO editar a mao — rode o gerador.
+            [v] import { toast } from "sonner"
+            [v] import { useParams } from "@tanstack/react-router"
+            [v] import { use{{ $objectType }}, useAtualizar{{ $objectType }} } from "@/gen/api/{{ $beanLower }}"
+            [v] import { LoadingState, ErrorState } from "@/runtime/states"
+            [v] import { {{ @name }}Form, type {{ @name }}Values } from "./{{ @name }}"
+            [v]
+            [v] export function {{ @name }}Screen() {
+            [v]   const { id } = useParams({ strict: false }) as { id: string }
+            [v]   const query = use{{ $objectType }}(id)
+            [v]   const atualizar = useAtualizar{{ $objectType }}()
+            [v]   async function handleSubmit(values: {{ @name }}Values) {
+            [v]     await atualizar.mutateAsync({ id, input: values })
+            [v]     toast.success("Alterações salvas com sucesso.")
+            [v]   }
+            [v]   return (
+            [v]     <main className="mx-auto max-w-2xl p-6">
+            [v]       <div className="mb-6">
+            [v]         <h1 className="text-2xl font-semibold tracking-tight">{{ properties/title/pt/value }}</h1>
+        [e] page-desc
+            [v]         <p className="mt-1 text-sm text-muted-foreground">{{ properties/description/pt/value }}</p>
+        [e] page-body
+            [v]       </div>
+            [v]       {query.isPending ? (
+            [v]         <LoadingState rows={6} cols={1} />
+            [v]       ) : query.isError ? (
+            [v]         <ErrorState onRetry={() => query.refetch()} />
+            [v]       ) : (
+            [v]         <{{ @name }}Form
+            [v]           values={query.data}
+            [v]           onSubmit={handleSubmit}
+            [v]           isSubmitting={atualizar.isPending}
+            [v]         />
+            [v]       )}
+            [v]     </main>
+            [v]   )
+            [v] }
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [e] write-pattern
+                [v] page-head
+            [e] if
+                [v] $hasDescription
+                [e] then
+                    [e] write-pattern
+                        [v] page-desc
+            [e] write-pattern
+                [v] page-body

@@ -1,0 +1,89 @@
+[b] ItemPedido
+    @
+        [e] title
+            [e] pt
+                [v] Item do Pedido
+            [e] en
+                [v] Order Item
+        [e] description
+            [e] pt
+                [v] Detalhe do Pedido. Só existe dentro dele — some quando o Pedido some.
+                  | Por isso aponta para o mestre com [m], e o mestre para cá com [o].
+            [e] en
+                [v] Detail of the Pedido. Only exists inside it — disappears with it.
+                  | Hence it points to the master with [m], and the master back with [o].
+    [g] identificacao
+        [d] id: Texto(36)
+            @
+                [e] cn
+                    [v] id
+                [e] title
+                    [e] pt
+                        [v] Identificador
+                    [e] en
+                        [v] Identifier
+                [e] required
+                    [v] true
+        [d] descricao: Texto(255)
+            @
+                [e] cn
+                    [v] descricao
+                [e] title
+                    [e] pt
+                        [v] Descrição
+                    [e] en
+                        [v] Description
+                [e] required
+                    [v] true
+    [g] valores
+        [d] quantidade: Inteiro()
+            @
+                [e] cn
+                    [v] quantidade
+                [e] title
+                    [e] pt
+                        [v] Quantidade
+                    [e] en
+                        [v] Quantity
+                [e] required
+                    [v] true
+        [d] precoUnitario: ValorMonetario()
+            @
+                [e] cn
+                    [v] preco_unitario
+                [e] title
+                    [e] pt
+                        [v] Preço unitário
+                    [e] en
+                        [v] Unit price
+                [e] required
+                    [v] true
+    [g] controle
+        [d] ativo: Boolean()
+            @
+                [e] cn
+                    [v] ativo
+                [e] title
+                    [e] pt
+                        [v] Ativo
+                    [e] en
+                        [v] Active
+        [d] dataCriacao: DataHora()
+            @
+                [e] cn
+                    [v] data_criacao
+                [e] title
+                    [e] pt
+                        [v] Data de criação
+                    [e] en
+                        [v] Created at
+    [g] relacionamentos
+        [m] pedido: Pedido()
+            @
+                [e] title
+                    [e] pt
+                        [v] Pedido
+                    [e] en
+                        [v] Order
+                [e] required
+                    [v] true

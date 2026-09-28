@@ -1,0 +1,1369 @@
+[e] domain
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] mapNativeTypes
+            [e] select
+                [v] //maps/mapNativeTypes
+        [e] classes
+            [e] select
+                [v] /classes
+    [e] fragments
+        [e] tabulaDescription
+            [v] for $linha in functx:lines(string-join(properties/description/pt/value,codepoints-to-string(10))) return mi:tabulate-text(concat(normalize-space($linha),codepoints-to-string(10)),'* ',80)
+        [e] paramSeparator
+            [v] mi:if-else(position() = last(), '', ',')
+        [e] attributeOperatorOr
+            [v] mi:if-else(position() = last(), ';', ' || ')
+        [e] attributeOperatorEnd
+            [v] mi:if-else(position() = last(), ';', ' && ')
+    [e] patterns
+        [e] package
+            [v] package {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.domain;
+            [v] 
+            [v] import java.time.LocalDateTime;
+            [v] import com.fasterxml.jackson.annotation.JsonIgnore;
+            [v] import com.fasterxml.jackson.annotation.JsonFormat;
+        [e] class-start
+            [v] 
+            [v] /*
+            [v] {{ f#[tabulaDescription] }}
+            [v] */
+            [v] public class {{ @name }} {
+            [v] 
+        [e] class-close
+            [v] 
+            [v] }
+        [g] imports
+            [e] import-list
+                [v] import java.util.List;
+                [v] import java.util.ArrayList;
+            [e] import-map
+                [v] import java.util.Map;
+                [v] import java.util.HashMap;
+            [e] import-date
+                [v] import java.time.LocalDate;
+            [e] import-dateTime
+            [e] import-Size
+                [v] import jakarta.validation.constraints.Size;
+            [e] import-NotEmpty
+                [v] import jakarta.validation.constraints.NotEmpty;
+            [e] import-NotNull
+                [v] import jakarta.validation.constraints.NotNull;
+            [e] import
+                [v] import {{ substring-before($class/@package,'.domain.') }}.core.{{ substring-after($class/@package,'.domain.') }}.{{ $class/@name }};
+        [g] attributes
+            [e] attributeStart
+                [v] 
+            [e] attributeAnyType
+                [v]     private {{ $class/@name }} {{ @name }};
+            [e] attributeComposite
+                [v]     private {{ $class/@name }} {{ @name }};
+            [e] attributeDate
+                [v]     @JsonFormat(pattern="yyyy-MM-dd")
+                [v]     private LocalDate {{ @name }};
+            [e] attributeDateTime
+                [v]     @JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss")
+                [v]     private LocalDateTime {{ @name }};
+            [e] attributeAnyTypeCollection
+                [v]     private List<{{ $class/@name }}> {{ @name }};
+            [e] attributeAnyTypeMap
+                [v]     private Map<{{ $class/@name }}> {{ @name }};
+            [e] attributeString
+                [v]     private String {{ @name }};
+            [e] attributeBinary
+                [v]     private byte[] {{ @name }};
+            [e] attributeInteger
+                [v]     private Integer {{ @name }};
+            [e] attributeLong
+                [v]     private Long {{ @name }};
+            [e] attributeDouble
+                [v]     private Double {{ @name }};
+            [e] attributeBoolean
+                [v]     private Boolean {{ @name }};
+            [e] attributesSystemFields
+                [v]     @JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss")
+                [v]     private LocalDateTime version;
+            [e] validateNotNull
+                [v]     @NotNull(message = "The attribute {{ @name }} can't be null.")
+            [e] validateNotEmpty
+                [v]     @NotEmpty(message = "The attribute {{ @name }} can't be empty.")
+            [e] validateStringSize
+                [v]     @Size(max = {{ @typeParameter }}, message = "Attribute {{ @name }} must have {{ @typeParameter }} characters maximum.")
+            [e] validateStringSizeBigString
+                [v]     @Size(max = 2147483647, message = "Attribute {{ @name }} must have 2147483647 characters maximum.")
+        [g] constructor
+            [e] defaultConstructor-start
+                [v] 
+                [v]     public {{ ../@name }}() {
+                [v]         this.version = null;
+            [e] defaultConstructor-close
+                [v]     }
+            [e] defaultConstructor-setAnyTypeCollection
+                [v]         this.{{ @name }} = null;
+            [e] defaultConstructor-setAnyTypeMap
+                [v]         this.{{ @name }} = null;
+            [e] defaultConstructor-setAnyType
+                [v]         this.{{ @name }} = null;
+            [e] defaultConstructor-setDate
+                [v]         this.{{ @name }} = null;
+            [e] defaultConstructor-setDateTime
+                [v]         this.{{ @name }} = null;
+            [e] defaultConstructor-setString
+                [v]         this.{{ @name }} = null;
+            [e] defaultConstructor-setInteger
+                [v]         this.{{ @name }} = null;
+            [e] defaultConstructor-setLong
+                [v]         this.{{ @name }} = null;
+            [e] defaultConstructor-setDouble
+                [v]         this.{{ @name }} = null;
+            [e] defaultConstructor-setBoolean
+                [v]         this.{{ @name }} = null;
+            [e] allArgsConstructor-start
+                [v]
+                [v]     public {{ ../@name }}(
+                [v]         LocalDateTime version{{ mi:if-else(count(attribute) = 0, '', ',') }}
+            [e] allArgsConstructor-closeParams
+                [v]     ) {
+                [v]         this.version = version;
+            [e] allArgsConstructor-close
+                [v]     }
+            [e] allArgsConstructor-paramAnyTypeCollection
+                [v]         List<{{ $class/@name }}> {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramAnyTypeMap
+                [v]         Map<String, {{ $class/@name }}> {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramAnyType
+                [v]         {{ $class/@name }} {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramComposite
+                [v]         {{ $class/@name }} {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramDate
+                [v]         LocalDate {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramDateTime
+                [v]         LocalDateTime {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramString
+                [v]         String {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramBinary
+                [v]         byte[] {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramInteger
+                [v]         Integer {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramLong
+                [v]         Long {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramDouble
+                [v]         Double {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramBoolean
+                [v]         Boolean {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-bodyAnyTypeCollection
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyAnyTypeMap
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyAnyType
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyDate
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyDateTime
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyString
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyInteger
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyLong
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyDouble
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyBoolean
+                [v]         this.{{ @name }} = {{ @name }};
+        [g] accessors
+            [e] accessorAnyType
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}({{ $class/@name }} {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public {{ $class/@name }} get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorComposite
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}({{ $class/@name }} {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public {{ $class/@name }} get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorDate
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(LocalDate {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public LocalDate get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorDateTime
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(LocalDateTime {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public LocalDateTime get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorAnyTypeCollection
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(List<{{ $class/@name }}> {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public List<{{ $class/@name }}> get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorAnyTypeMap
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(Map<{{ $class/@name }}> {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public Map<{{ $class/@name }}> get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorString
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(String {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public String get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorBinary
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(byte[] {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public byte[] get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorInteger
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(Integer {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public Integer get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorLong
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(Long {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public Long get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorDouble
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(Double {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public Double get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorBoolean
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(Boolean {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public Boolean get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorsSystemFields
+                [v]
+                [v]     public void setVersion(LocalDateTime version) {
+                [v]         this.version = version;
+                [v]     }
+                [v] 
+                [v]     public LocalDateTime getVersion() {
+                [v]         return this.version;
+                [v]     }
+        [g] isWeakReference
+            [e] isWeakReference-start
+                [v] 
+                [v]     @JsonIgnore
+                [v]     public boolean isWeakReference() {
+            [e] isWeakReference-end
+                [v]     }
+            [e] isWeakReference-startConditionWithAttributes
+                [v]       return !this.isAnyNotKeyFieldsDefined()
+                [v]               && (
+                [v]                       this.isIdDefined()
+            [e] isWeakReference-endConditionWithAttributes
+                [v]               );
+            [e] thisIsIdErpDefined-condition
+                [v]                       || this.isIdErpDefined()
+            [e] thisIsUuidDefined-condition
+                [v]                       || this.isUuidDefined()
+            [e] thisIsSecondaryKeyDefined-condition
+                [v]                       || this.isSecondaryKeyDefined()
+            [e] isIdDefined
+                [v]
+                [v]     @JsonIgnore
+                [v]     public boolean isIdDefined() {
+                [v]         return this.id != null;
+                [v]     }
+            [e] isIdDefined-noId
+                [v]
+                [v]     @JsonIgnore
+                [v]     public boolean isIdDefined() {
+                [v]         return false;
+                [v]     }
+            [e] isIdErpDefined
+                [v] 
+                [v]     @JsonIgnore
+                [v]     public boolean isIdErpDefined() {
+                [v]         return this.idErp != null;
+                [v]     }
+            [e] isUuidDefined
+                [v] 
+                [v]     @JsonIgnore
+                [v]     public boolean isUuidDefined() {
+                [v]         return this.uuid != null;
+                [v]     }
+            [e] isSecondaryKeyDefined-start
+                [v] 
+                [v]     @JsonIgnore
+                [v]     public boolean isSecondaryKeyDefined() {
+                [y]         return 
+            [e] isSecondaryKeyDefined-end
+                [v]     }
+            [e] isAnyNotKeyFieldsDefined-start
+                [v] 
+                [v]     @JsonIgnore
+                [v]     public boolean isAnyNotKeyFieldsDefined() {
+                [y]         return 
+            [e] isAnyNotKeyFieldsDefined-end
+                [v]     }
+            [e] quebraLinha
+                [v] 
+            [e] allAreKeyFields
+                [v] false;
+            [e] attribute-isAnyNotKeyFieldsDefined
+                [v]             this.{{ @name }} != null{{ f#[attributeOperatorOr] }}
+            [e] attribute-isSecondaryKeyDefined
+                [v]             this.{{ @name }} != null{{ f#[attributeOperatorEnd] }}
+            [e] countKeyTrue-start
+                [v]         int countKeyTrue = 0;
+                [v]         if (this.isIdDefined()) {
+                [v]             countKeyTrue++;
+                [v]         }
+            [e] countKeyTrue-idErp
+                [v]         if (this.isIdErpDefined()){
+                [v]             countKeyTrue++;
+                [v]         }
+            [e] thisIsUuidDefined-uuid
+                [v]         if (this.isUuidDefined()){
+                [v]             countKeyTrue++;
+                [v]         }
+            [e] thisIsUuidDefined-sk
+                [v]         if (this.isSecondaryKeyDefined()) {
+                [v]             countKeyTrue++;
+                [v]         }
+            [e] countKeyTrue-end
+                [v]         return (countKeyTrue == 1);
+        [g] @TODO
+            [e] declaraTODO
+                [v] //@TODO _ tem que implementar: {{ $nomeTODO }}
+                [v] //Caminho xpath: {{ functx:path-to-node-with-pos(current()) }}
+            [e] declara-labelEstruturaXpath
+            [e] start-labelEstruturaXpath
+                [y] //Estrutura xpath: .[
+            [e] end-labelEstruturaXpath
+                [v] ]
+            [e] declara-nomeDoElemento
+                [y] name()='{{ name() }}'
+            [g] Estrutura xpath
+                [e] declara-barra
+                    [y] /
+                [e] declara-contadorElementosFilhos
+                    [y] count(*)={{ count(child::*) }}
+                [e] declara-andEspacoEmBranco
+                    [y]  and 
+                [e] declara-clausulaPositionName
+                    [y] child::*[position()={{ position() }} and name()='{{ name() }}']
+                [e] start-clausulaContZeroText
+                    [y] /.[count(*)=0 and 
+                [e] end-clausulaContZeroText
+                    [y] ]
+                [e] declara-clausulaText
+                    [y] text()='{{ text() }}'
+                [e] declara-clausulaTextName
+                    [y] text()
+                [e] declara-prefixoName
+                    [y] {{ $prefixoNome }}
+                [e] declara-clausulaNotTextName
+                    [y] not(text())
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [e] write-pattern
+                [v] package
+            [g] import
+                [e] if
+                    [v] attributes/attribute[@mode = 'oneToMany' and properties/apiRelation/value = 'EMBEDDED']
+                    [e] then
+                        [e] write-pattern
+                            [v] import-list
+                [e] if
+                    [v] attributes/attribute[@mode = 'directMap']
+                    [e] then
+                        [e] write-pattern
+                            [v] import-map
+                [e] if
+                    [v] attributes/attribute[@type = $mapNativeTypes/Date/value]
+                    [e] then
+                        [e] write-pattern
+                            [v] import-date
+                [e] if
+                    [v] attributes/attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] then
+                        [e] write-pattern
+                            [v] import-dateTime
+                [e] if
+                    [v] attributes/attribute/properties/required
+                    [e] then
+                        [e] write-pattern
+                            [v] import-NotEmpty
+                        [e] write-pattern
+                            [v] import-NotNull
+                [e] if
+                    [v] attributes/attribute[@typeParameter != '']
+                    [e] then
+                        [e] write-pattern
+                            [v] import-Size
+                [e] apply-templates
+                    [e] select
+                        [v] distinct-values(attributes/attribute[@mode != 'directToField']/@type)
+                    [e] mode
+                        [v] imports
+                    [e] parameters
+                        [e] inPackage
+                            [e] expr
+                                [v] @package
+            [g] inicio
+                [e] write-pattern
+                    [v] class-start
+            [g] corpo
+                [g] attributes
+                    [e] write-pattern
+                        [v] attributesSystemFields
+                    [e] apply-templates
+                        [e] select
+                            [v] attributes/attribute[not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                        [e] mode
+                            [v] attributes
+                [g] constructors
+                    [e] apply-templates
+                        [e] select
+                            [v] attributes
+                        [e] mode
+                            [v] constructors
+                [g] accessors
+                    [e] write-pattern
+                        [v] accessorsSystemFields
+                    [e] apply-templates
+                        [e] select
+                            [v] attributes/attribute[not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                        [e] mode
+                            [v] accessors
+                [g] isWeakReference
+                    [e] apply-templates
+                        [e] select
+                            [v] .
+                        [e] mode
+                            [v] weakReference
+            [g] fim
+                [e] write-pattern
+                    [v] class-close
+    [e] templates
+        [g] imports
+            [e] mode
+                [v] imports
+                [e] template
+                    [e] match
+                        [v] .
+                    [e] parameters
+                        [e] inPackage
+                            [v] NOT_DEFINED
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(.,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] substring-after(.,'.')
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] $classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] $class/@package != $inPackage
+                            [e] then
+                                [e] write-pattern
+                                    [v] import
+        [g] attributes
+            [e] mode
+                [v] attributes
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] write-pattern
+                            [v] attributeStart
+                        [e] if
+                            [v] contains(@mode,'oneToMany')
+                            [e] then
+                                [e] if
+                                    [v] properties/required
+                                    [e] then
+                                        [e] write-pattern
+                                            [v] validateNotEmpty
+                                [e] write-pattern
+                                    [v] attributeAnyTypeCollection
+                            [e] else-if
+                                [v] @mode = 'manyToOne' or @mode = 'oneToOne'
+                                [e] then
+                                    [e] if
+                                        [v] properties/required
+                                        [e] then
+                                            [e] write-pattern
+                                                [v] validateNotNull
+                                    [e] write-pattern
+                                        [v] attributeAnyType
+                            [e] else-if
+                                [v] @mode = 'directMap'
+                                [e] then
+                                    [e] if
+                                        [v] properties/required
+                                        [e] then
+                                            [e] write-pattern
+                                                [v] validateNotNull
+                                    [e] write-pattern
+                                        [v] attributeAnyTypeMap
+                            [e] else-if
+                                [v] @mode="composite"
+                                [e] then
+                                    [e] if
+                                        [v] properties/required
+                                        [e] then
+                                            [e] write-pattern
+                                                [v] validateNotNull
+                                    [e] write-pattern
+                                        [v] attributeComposite
+                            [e] else
+                                [e] if
+                                    [v] properties/required
+                                    [e] then
+                                        [e] write-pattern
+                                            [v] validateNotNull
+                                [e] write-pattern
+                                    [v] attributeAnyType
+                                [e] apply-templates
+                                    [e] select
+                                        [v] .
+                                    [e] parameters
+                                        [e] nomeTODO
+                                            [v] ATTRIBUTES
+                                    [e] mode
+                                        [v] assignTODO
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeStart
+                        [e] if
+                            [v] properties/required
+                            [e] then
+                                [e] write-pattern
+                                    [v] validateNotNull
+                        [e] write-pattern
+                            [v] attributeDate
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeStart
+                        [e] if
+                            [v] properties/required
+                            [e] then
+                                [e] write-pattern
+                                    [v] validateNotNull
+                        [e] write-pattern
+                            [v] attributeDateTime
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeStart
+                        [e] if
+                            [v] properties/required
+                            [e] then
+                                [e] write-pattern
+                                    [v] validateNotEmpty
+                        [e] if
+                            [v] @typeParameter != ''
+                            [e] then
+                                [e] write-pattern
+                                    [v] validateStringSize
+                        [e] write-pattern
+                            [v] attributeString
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Binary/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeStart
+                        [e] if
+                            [v] properties/required
+                            [e] then
+                                [e] write-pattern
+                                    [v] validateNotEmpty
+                        [e] if
+                            [v] @typeParameter != ''
+                            [e] then
+                                [e] write-pattern
+                                    [v] validateStringSize
+                            [e] else
+                                [e] write-pattern
+                                    [v] validateStringSizeBigString
+                        [e] write-pattern
+                            [v] attributeBinary
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/BigString/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeStart
+                        [e] if
+                            [v] properties/required
+                            [e] then
+                                [e] write-pattern
+                                    [v] validateNotEmpty
+                        [e] if
+                            [v] @typeParameter != ''
+                            [e] then
+                                [e] write-pattern
+                                    [v] validateStringSize
+                            [e] else
+                                [e] write-pattern
+                                    [v] validateStringSizeBigString
+                        [e] write-pattern
+                            [v] attributeString
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeStart
+                        [e] if
+                            [v] properties/required
+                            [e] then
+                                [e] write-pattern
+                                    [v] validateNotNull
+                        [e] write-pattern
+                            [v] attributeInteger
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeStart
+                        [e] if
+                            [v] properties/required
+                            [e] then
+                                [e] write-pattern
+                                    [v] validateNotNull
+                        [e] write-pattern
+                            [v] attributeLong
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeStart
+                        [e] if
+                            [v] properties/required
+                            [e] then
+                                [e] write-pattern
+                                    [v] validateNotNull
+                        [e] write-pattern
+                            [v] attributeDouble
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeStart
+                        [e] if
+                            [v] properties/required
+                            [e] then
+                                [e] write-pattern
+                                    [v] validateNotNull
+                        [e] write-pattern
+                            [v] attributeBoolean
+        [g] constructors
+            [e] mode
+                [v] constructors
+                [e] template
+                    [e] match
+                        [v] attributes
+                    [e] body
+                        [g] default
+                            [e] write-pattern
+                                [v] defaultConstructor-start
+                            [e] apply-templates
+                                [e] select
+                                    [v] attribute[not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                                [e] mode
+                                    [v] defaultConstructor-body
+                            [e] write-pattern
+                                [v] defaultConstructor-close
+                        [g] allArgs
+                            [e] write-pattern
+                                [v] allArgsConstructor-start
+                            [e] apply-templates
+                                [e] select
+                                    [v] attribute[not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                                [e] mode
+                                    [v] allArgsConstructor-params
+                            [e] write-pattern
+                                [v] allArgsConstructor-closeParams
+                            [e] apply-templates
+                                [e] select
+                                    [v] attribute[not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                                [e] mode
+                                    [v] allArgsConstructor-body
+                            [e] write-pattern
+                                [v] allArgsConstructor-close
+            [e] mode
+                [v] defaultConstructor-body
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] contains(@mode,'oneToMany')
+                            [e] then
+                                [e] write-pattern
+                                    [v] defaultConstructor-setAnyTypeCollection
+                            [e] else-if
+                                [v] @mode = 'directMap'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] defaultConstructor-setAnyTypeMap
+                            [e] else
+                                [e] write-pattern
+                                    [v] defaultConstructor-setAnyType
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] defaultConstructor-setDate
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] defaultConstructor-setDateTime
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] defaultConstructor-setString
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] defaultConstructor-setInteger
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] defaultConstructor-setLong
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] defaultConstructor-setDouble
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] defaultConstructor-setBoolean
+            [e] mode
+                [v] allArgsConstructor-params
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] contains(@mode,'oneToMany')
+                            [e] then
+                                [e] write-pattern
+                                    [v] allArgsConstructor-paramAnyTypeCollection
+                            [e] else-if
+                                [v] @mode = 'directMap'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] allArgsConstructor-paramAnyTypeMap
+                            [e] else-if
+                                [v] @mode = 'manyToOne' or @mode = 'oneToOne'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] allArgsConstructor-paramAnyType
+                            [e] else-if
+                                [v] @mode="composite"
+                                [e] then
+                                    [e] write-pattern
+                                        [v] allArgsConstructor-paramComposite
+                            [e] else
+                                [e] write-pattern
+                                    [v] allArgsConstructor-paramAnyType
+                                [e] apply-templates
+                                    [e] select
+                                        [v] .
+                                    [e] parameters
+                                        [e] nomeTODO
+                                            [v] ALL-ARGS-CONSTRUCTOR-PARAMS
+                                    [e] mode
+                                        [v] assignTODO
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramDate
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramDateTime
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value or @type = $mapNativeTypes/BigString/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramString
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Binary/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramBinary
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramInteger
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramLong
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramDouble
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramBoolean
+            [e] mode
+                [v] allArgsConstructor-body
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] contains(@mode,'oneToMany')
+                            [e] then
+                                [e] write-pattern
+                                    [v] allArgsConstructor-bodyAnyTypeCollection
+                            [e] else-if
+                                [v] @mode = 'directMap'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] allArgsConstructor-bodyAnyTypeMap
+                            [e] else
+                                [e] write-pattern
+                                    [v] allArgsConstructor-bodyAnyType
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyDate
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyDateTime
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyString
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyInteger
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyLong
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyDouble
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyBoolean
+        [g] accessors
+            [e] mode
+                [v] accessors
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] contains(@mode,'oneToMany')
+                            [e] then
+                                [e] write-pattern
+                                    [v] accessorAnyTypeCollection
+                            [e] else-if
+                                [v] @mode = 'directMap'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] accessorAnyTypeMap
+                            [e] else-if
+                                [v] @mode = 'manyToOne' or @mode = 'oneToOne'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] accessorAnyType
+                            [e] else-if
+                                [v] @mode="composite"
+                                [e] then
+                                    [e] write-pattern
+                                        [v] accessorComposite
+                            [e] else
+                                [e] write-pattern
+                                    [v] accessorAnyType
+                                [e] apply-templates
+                                    [e] select
+                                        [v] .
+                                    [e] parameters
+                                        [e] nomeTODO
+                                            [v] ACCESSORS
+                                    [e] mode
+                                        [v] assignTODO
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorDate
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorDateTime
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value or @type = $mapNativeTypes/BigString/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorString
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Binary/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorBinary
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorInteger
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorLong
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorDouble
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorBoolean
+        [g] isWeakReference
+            [e] mode
+                [v] weakReference
+                [e] template
+                    [e] match
+                        [v] class
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] SK
+                                [e] expr
+                                    [v] properties/SK
+                        [g] isWeakReference
+                            [e] write-pattern
+                                [v] isWeakReference-start
+                            [e] if
+                                [v] attributes/attribute[@name!='idErp' and @name!='uuid' and not(functx:is-value-in-sequence(@name, $SK/value)) and not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                                [e] then
+                                    [g] isWeakReference
+                                        [e] write-pattern
+                                            [v] isWeakReference-startConditionWithAttributes
+                                        [e] if
+                                            [v] attributes/attribute[@name='idErp']
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] thisIsIdErpDefined-condition
+                                        [e] if
+                                            [v] attributes/attribute[@name='uuid']
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] thisIsUuidDefined-condition
+                                        [e] if
+                                            [v] properties/SK/value
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] thisIsSecondaryKeyDefined-condition
+                                        [e] write-pattern
+                                            [v] isWeakReference-endConditionWithAttributes
+                                [e] else
+                                    [e] write-pattern
+                                        [v] countKeyTrue-start
+                                    [e] if
+                                        [v] attributes/attribute[@name='idErp']
+                                        [e] then
+                                            [e] write-pattern
+                                                [v] countKeyTrue-idErp
+                                    [e] if
+                                        [v] attributes/attribute[@name='uuid']
+                                        [e] then
+                                            [e] write-pattern
+                                                [v] thisIsUuidDefined-uuid
+                                    [e] if
+                                        [v] properties/SK/value
+                                        [e] then
+                                            [e] write-pattern
+                                                [v] thisIsUuidDefined-sk
+                                    [e] write-pattern
+                                        [v] countKeyTrue-end
+                            [e] write-pattern
+                                [v] isWeakReference-end
+                        [e] if
+                            [v] attributes/attribute[@name='id']
+                            [e] then
+                                [e] write-pattern
+                                    [v] isIdDefined
+                            [e] else
+                                [e] write-pattern
+                                    [v] isIdDefined-noId
+                        [e] if
+                            [v] attributes/attribute[@name='idErp']
+                            [e] then
+                                [e] write-pattern
+                                    [v] isIdErpDefined
+                        [e] if
+                            [v] attributes/attribute[@name='uuid']
+                            [e] then
+                                [e] write-pattern
+                                    [v] isUuidDefined
+                        [e] if
+                            [v] properties/SK/value
+                            [e] then
+                                [e] apply-templates
+                                    [e] select
+                                        [v] .
+                                    [e] mode
+                                        [v] isSecondaryKeyDefined
+                        [e] apply-templates
+                            [e] select
+                                [v] .
+                            [e] mode
+                                [v] isAnyNotKeyFieldsDefined
+            [e] mode
+                [v] isAnyNotKeyFieldsDefined
+                [e] template
+                    [e] match
+                        [v] class
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] SK
+                                [e] expr
+                                    [v] properties/SK
+                        [e] write-pattern
+                            [v] isAnyNotKeyFieldsDefined-start
+                        [e] if
+                            [v] attributes/attribute[@name!='idErp' and @name!='uuid' and not(functx:is-value-in-sequence(@name, $SK/value)) and not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                            [e] then
+                                [e] write-pattern
+                                    [v] quebraLinha
+                                [e] apply-templates
+                                    [e] select
+                                        [v] attributes/attribute[@name!='idErp' and @name!='uuid' and not(functx:is-value-in-sequence(@name, $SK/value)) and not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                            [e] else
+                                [e] write-pattern
+                                    [v] allAreKeyFields
+                        [e] write-pattern
+                            [v] isAnyNotKeyFieldsDefined-end
+                [e] template
+                    [e] match
+                        [v] attribute
+                    [e] body
+                        [e] write-pattern
+                            [v] attribute-isAnyNotKeyFieldsDefined
+            [e] mode
+                [v] isSecondaryKeyDefined
+                [e] template
+                    [e] match
+                        [v] class
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] SK
+                                [e] expr
+                                    [v] properties/SK
+                        [e] write-pattern
+                            [v] isSecondaryKeyDefined-start
+                        [e] write-pattern
+                            [v] quebraLinha
+                        [e] apply-templates
+                            [e] select
+                                [v] attributes/attribute[functx:is-value-in-sequence(@name, $SK/value)]
+                        [e] write-pattern
+                            [v] isSecondaryKeyDefined-end
+                [e] template
+                    [e] match
+                        [v] attribute
+                    [e] body
+                        [e] write-pattern
+                            [v] attribute-isSecondaryKeyDefined
+        [g] @TODO
+            [e] mode
+                [v] assignTODO
+                [e] template
+                    [e] match
+                        [v] *
+                    [e] parameters
+                        [e] nomeTODO
+                            [v] NOT_DEFINED
+                    [e] body
+                        [e] write-pattern
+                            [v] declaraTODO
+                        [e] write-pattern
+                            [v] start-labelEstruturaXpath
+                        [e] write-pattern
+                            [v] declara-contadorElementosFilhos
+                        [e] write-pattern
+                            [v] declara-andEspacoEmBranco
+                        [e] write-pattern
+                            [v] declara-nomeDoElemento
+                        [e] if
+                            [v] count(./*)>0
+                            [e] then
+                                [e] write-pattern
+                                    [v] declara-andEspacoEmBranco
+                                [e] apply-templates
+                                    [e] select
+                                        [v] ./*
+                                    [e] parameters
+                                        [e] prefixoNome
+                                            [e] expr
+                                                [v] ''
+                                    [e] mode
+                                        [v] estruturaXpath
+                        [e] write-pattern
+                            [v] end-labelEstruturaXpath
+                        [e] write-pattern
+                            [v] quebraLinha
+            [e] mode
+                [v] estruturaXpath
+                [e] template
+                    [e] match
+                        [v] *
+                    [e] parameters
+                        [e] prefixoNome
+                            [v] NOT_DEFINED
+                    [e] body
+                        [e] if
+                            [v] $prefixoNome != ''
+                            [e] then
+                                [e] write-pattern
+                                    [v] declara-prefixoName
+                        [e] write-pattern
+                            [v] declara-clausulaPositionName
+                        [e] if
+                            [v] .[count(*)=0 and text()]
+                            [e] then
+                                [e] write-pattern
+                                    [v] start-clausulaContZeroText
+                                [e] write-pattern
+                                    [v] declara-clausulaText
+                                [e] write-pattern
+                                    [v] end-clausulaContZeroText
+                            [e] else-if
+                                [v] .[count(*)=0 and not(text())]
+                                [e] then
+                                    [e] write-pattern
+                                        [v] start-clausulaContZeroText
+                                    [e] write-pattern
+                                        [v] declara-clausulaNotTextName
+                                    [e] write-pattern
+                                        [v] end-clausulaContZeroText
+                            [e] else
+                                [e] vars
+                                    [e] var
+                                        [v] valueNameTratar
+                                        [e] expr
+                                            [v] name()
+                                    [e] var
+                                        [v] valueName
+                                        [e] expr
+                                            [v] concat(concat($prefixoNome, $valueNameTratar), '/')
+                                [e] write-pattern
+                                    [v] declara-barra
+                                [e] write-pattern
+                                    [v] declara-contadorElementosFilhos
+                                [e] write-pattern
+                                    [v] declara-andEspacoEmBranco
+                                [e] apply-templates
+                                    [e] select
+                                        [v] ./*
+                                    [e] parameters
+                                        [e] prefixoNome
+                                            [e] expr
+                                                [v] $valueName
+                                    [e] mode
+                                        [v] estruturaXpath
+                        [e] if
+                            [v] position() != last()
+                            [e] then
+                                [e] write-pattern
+                                    [v] declara-andEspacoEmBranco

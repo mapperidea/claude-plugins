@@ -1,0 +1,130 @@
+[p] com.exemplo
+    @
+        [e] title
+            [e] pt
+                [v] Exemplo executável do pack quarkus
+            [e] en
+                [v] Runnable example for the quarkus pack
+        [e] description
+            [e] pt
+                [v] Mapa mínimo, fora de qualquer domínio real, cujo generate produz código Java
+                  | que compila: 4 entidades, um enum, uma relação fraca, referências e uma de
+                  | cada família de tipo que o pack lê.
+            [e] en
+                [v] Minimal map, outside any real domain, whose generate output compiles:
+                  | 4 entities, one enum, one weak relation, references and one of each
+                  | type family the pack reads.
+    config
+        structVersion
+            2
+        [e] mapperidea
+            [e] maps
+                [e] mapNativeTypes
+                    [e] String
+                        [v] Texto
+                    [e] BigString
+                        [v] TextoLongo
+                    [e] Integer
+                        [v] Inteiro
+                    [e] Long
+                        [v] InteiroLongo
+                    [e] Double
+                        [v] ValorMonetario
+                        [v] Decimal
+                    [e] Boolean
+                        [v] Boolean
+                    [e] Date
+                        [v] Data
+                    [e] DateTime
+                        [v] DataHora
+                    [e] Binary
+                        [v] Binario
+                [e] toSwaggerTypes
+                    [e] Texto
+                        [v] string
+                    [e] TextoLongo
+                        [v] string
+                    [e] Inteiro
+                        [v] integer
+                    [e] InteiroLongo
+                        [v] integer
+                    [e] ValorMonetario
+                        [v] number
+                    [e] Decimal
+                        [v] number
+                    [e] Boolean
+                        [v] boolean
+                    [e] Data
+                        [v] string
+                    [e] DataHora
+                        [v] string
+                    [e] Binario
+                        [v] string
+                [e] nondeterministicSearchField
+                    [v] nome
+                    [v] razaoSocial
+            [e] generators
+                [e] quarkus
+                    [e] domain
+                        #
+                            quarkus-domain.mi
+                    [e] entity
+                        #
+                            quarkus-entity.mi
+                    [e] builder
+                        #
+                            quarkus-builder.mi
+                    [e] repository
+                        #
+                            quarkus-repository.mi
+                    [e] mapper
+                        #
+                            quarkus-mapper.mi
+                    [e] resource
+                        #
+                            quarkus-resource.mi
+                [e] swagger
+                    [e] restAPI
+                        #
+                            swagger-restAPI.mi
+    [b] CurrentSchema
+        @
+            [e] description
+                [e] pt
+                    [v] Não é entidade — é onde o gerador swagger/restAPI lê nome do projeto,
+                      | host e URL de token (procura a classe por este nome exato).
+                [e] en
+                    [v] Not an entity — it is where the swagger/restAPI generator reads project
+                      | name, host and token URL (it looks the class up by this exact name).
+            [e] projectNames
+                [e] projectName
+                    [v] Exemplo
+                [e] host
+                    [v] localhost:8080
+                [e] tokenUrl
+                    [v] http://localhost:8080/token
+    [p] domain
+        [p] loja
+            @
+                [e] title
+                    [e] pt
+                        [v] Loja
+                    [e] en
+                        [v] Store
+                [e] description
+                    [e] pt
+                        [v] Domínio de ensino — uma loja com clientes, fornecedores e pedidos.
+                    [e] en
+                        [v] Teaching domain — a store with customers, suppliers and orders.
+            [b] Cliente
+                #
+                    exemplo/dominio/Cliente.mi
+            [b] Fornecedor
+                #
+                    exemplo/dominio/Fornecedor.mi
+            [b] Pedido
+                #
+                    exemplo/dominio/Pedido.mi
+            [b] ItemPedido
+                #
+                    exemplo/dominio/ItemPedido.mi

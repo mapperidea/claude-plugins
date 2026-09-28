@@ -1,0 +1,59 @@
+[e] screenManifest
+    [e] fragments
+        [e] stereo
+            [v] substring-after(@mode, 'window.')
+        [e] routeStr
+            [v] concat('"', properties/route/value, '"')
+        [e] iconProp
+            [v] mi:if-else(exists(properties/icon/value), concat(' icon: "', properties/icon/value, '",'), '')
+        [e] groupProp
+            [v] mi:if-else(exists(properties/group/value), concat(' group: "', properties/group/value, '",'), '')
+        [e] orderProp
+            [v] mi:if-else(exists(properties/order/value), concat(' order: ', properties/order/value, ','), '')
+        [e] hiddenProp
+            [v] mi:if-else(exists(properties/hidden/value), ' hidden: true,', '')
+        [e] brandsArr
+            [v] concat('[', string-join(for $b in properties/usedIn/value return concat('"', $b, '"'), ', '), ']')
+    [e] patterns
+        [e] header
+            [v] // GERADO por: mi generate <projeto> frontend screenManifest
+            [v] // Fonte: mapas de tela em mi/window/**. NAO editar a mao — rode o gerador.
+            [v] export type ScreenBrand = "marcaA" | "marcaB"
+            [v] export interface ScreenEntry {
+            [v]   name: string
+            [v]   route: string
+            [v]   title: string
+            [v]   stereo: string
+            [v]   icon?: string
+            [v]   group?: string
+            [v]   order?: number
+            [v]   hidden?: boolean
+            [v]   brands: ScreenBrand[]
+            [v] }
+            [v] export const screens: ScreenEntry[] = [
+        [e] footer
+            [v] ]
+        [e] entry
+            [v]   { name: "{{ @name }}", route: {{ f#[routeStr] }}, title: "{{ properties/title/pt/value }}", stereo: "{{ f#[stereo] }}",{{ f#[iconProp] }}{{ f#[groupProp] }}{{ f#[orderProp] }}{{ f#[hiddenProp] }} brands: {{ f#[brandsArr] }} },
+    [e] start
+        [e] match
+            [v] /classes
+        [e] body
+            [e] write-pattern
+                [v] header
+            [e] apply-templates
+                [e] select
+                    [v] class[starts-with(@package, 'com.exemplo.window.')]
+                [e] mode
+                    [v] entry
+            [e] write-pattern
+                [v] footer
+    [e] templates
+        [e] mode
+            [v] entry
+            [e] template
+                [e] match
+                    [v] class
+                [e] body
+                    [e] write-pattern
+                        [v] entry

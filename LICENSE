@@ -1,0 +1,54 @@
+# Licença de uso
+
+**mapperidea-iadd** — Agent Kit e IADD para Claude Code
+Copyright © 2026 Clovis Wichoski. Todos os direitos reservados.
+
+---
+
+## O que rege o uso
+
+O conteúdo deste repositório **não tem licença própria**. O direito de uso está **atrelado ao
+licenciamento de acesso ao Mapper Idea**: quem tem acesso licenciado ao Mapper Idea pode usar, copiar e
+adaptar este material nos seus projetos, nos termos desse licenciamento.
+
+Isso não é apenas formalidade jurídica — é também uma dependência de fato. O plugin `iadd` existe para
+operar o Mapper Idea: a tríade de agentes, os packs de geradores e o pipeline dependem do **CLI `mi`**, e
+o CLI só funciona para um **usuário autorizado**. Sem essa autorização, a parte IADD deste repositório
+não tem o que fazer.
+
+## Como obter uma licença
+
+Por enquanto, por e-mail:
+
+**contato@mapperidea.io**
+
+## Sobre o que você produz com isto
+
+O princípio deste kit é **semente, não framework**: o que ele gera — agentes, mapas, geradores, código —
+é **seu**, do seu projeto, e não fica preso a este repositório nem ao kit. É por isso que a regra de
+ejeção é verificada por teste: o que sai daqui continua funcionando depois que o plugin for desinstalado.
+
+Esta licença trata do **material do kit**, não do que você produz com ele.
+
+## Nota sobre o plugin `agent-kit`
+
+Tecnicamente, o plugin `agent-kit` (autoria de agentes Claude Code) **não depende do Mapper Idea nem do
+CLI** — ele serve a qualquer repositório, de qualquer stack. A distribuição dele, hoje, segue os mesmos
+termos acima por vir neste repositório. Se um dia for liberado sob outros termos, será dito aqui de forma
+explícita.
+
+---
+
+## Use license (English summary)
+
+This repository has **no separate license of its own**. The right to use it is **tied to Mapper Idea
+access licensing**: holders of a licensed Mapper Idea access may use, copy and adapt this material in
+their own projects under those terms.
+
+This is also a factual dependency: the `iadd` plugin exists to operate Mapper Idea, and its agents,
+generator packs and pipeline require the **`mi` CLI**, which only works for an **authorized user**.
+
+To request a license, contact **contato@mapperidea.io**.
+
+What you *produce* with this kit — agents, maps, generators, code — is **yours** and is not bound to this
+repository. This license covers the kit's own material.

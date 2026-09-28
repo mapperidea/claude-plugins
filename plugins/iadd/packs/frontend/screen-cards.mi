@@ -1,0 +1,137 @@
+[e] screenCards
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] screenClass
+            [e] select
+                [v] /classes/class[@name = $modelName and @package = $package]
+        [e] objectType
+            [e] expr
+                [v] $screenClass/attributes/attribute[@name = 'object']/@type
+        [e] beanLower
+            [e] expr
+                [v] mi:first-lower($objectType)
+        [e] domainClass
+            [e] select
+                [v] /classes/class[@name = $objectType and @mode = 'bean']
+        [e] titleKey
+            [e] expr
+                [v] substring($screenClass/columns/field[1]/value, 2)
+        [e] primaryAction
+            [e] select
+                [v] $screenClass/actions/action[properties/type/value = 'primary'][1]
+        [e] hasPrimaryAction
+            [e] expr
+                [v] exists($primaryAction)
+        [e] hasEmptyState
+            [e] expr
+                [v] exists($screenClass/emptyState/properties/message/pt/value)
+        [e] hasDescription
+            [e] expr
+                [v] exists($screenClass/properties/description/pt/value)
+    [e] fragments
+        [e] attr
+            [v] substring(value,2)
+        [e] label
+            [v] string(for $a in substring(value,2) return $domainClass/attributes/attribute[@name = $a]/properties/title/pt/value)
+    [e] patterns
+        [e] header
+            [v] // GERADO por: mi generate <projeto> frontend screenCards modelName={{ @name }} package={{ @package }}
+            [v] // Fonte: mapa de tela {{ @name }} + dominio {{ $objectType }}. NAO editar a mao — rode o gerador.
+            [v] import { CardList, type CardField } from "@/runtime/card-list"
+            [v] import { use{{ $objectType }}s } from "@/gen/api/{{ $beanLower }}"
+            [v] import type { {{ $objectType }} } from "@/gen/schemas/{{ $beanLower }}"
+            [v]
+        [e] fields-start
+            [v] const fields: CardField[] = [
+        [e] field-line
+            [v]   { key: "{{ f#[attr] }}", label: "{{ f#[label] }}" },
+        [e] fields-end
+            [v] ]
+        [e] action-const
+            [v] const cardAction = { label: "{{ $primaryAction/properties/label/pt/value }}", onSelect: (item: {{ $objectType }}) => console.info("{{ $primaryAction/value }}", item.id) }
+        [e] empty-const
+            [v] const emptyState = { message: "{{ emptyState/properties/message/pt/value }}" }
+        [e] page-head
+            [v]
+            [v] export function {{ @name }}Screen() {
+            [v]   const query = use{{ $objectType }}s()
+            [v]   return (
+            [v]     <main className="mx-auto max-w-5xl p-6">
+            [v]       <div className="mb-6">
+            [v]         <h1 className="text-2xl font-semibold tracking-tight">{{ properties/title/pt/value }}</h1>
+        [e] page-desc
+            [v]         <p className="mt-1 text-sm text-muted-foreground">{{ properties/description/pt/value }}</p>
+        [e] page-cardlist
+            [v]       </div>
+            [v]       <CardList
+            [v]         query={query}
+            [v]         titleKey="{{ $titleKey }}"
+            [v]         fields={fields}
+        [e] page-action-prop
+            [v]         action={cardAction}
+        [e] page-empty-prop
+            [v]         empty={emptyState}
+        [e] page-close
+            [v]       />
+            [v]     </main>
+            [v]   )
+            [v] }
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [e] write-pattern
+                [v] header
+            [e] write-pattern
+                [v] fields-start
+            [e] apply-templates
+                [e] select
+                    [v] columns/field[position() > 1]
+                [e] mode
+                    [v] cardField
+            [e] write-pattern
+                [v] fields-end
+            [e] if
+                [v] $hasPrimaryAction
+                [e] then
+                    [e] write-pattern
+                        [v] action-const
+            [e] if
+                [v] $hasEmptyState
+                [e] then
+                    [e] write-pattern
+                        [v] empty-const
+            [e] write-pattern
+                [v] page-head
+            [e] if
+                [v] $hasDescription
+                [e] then
+                    [e] write-pattern
+                        [v] page-desc
+            [e] write-pattern
+                [v] page-cardlist
+            [e] if
+                [v] $hasPrimaryAction
+                [e] then
+                    [e] write-pattern
+                        [v] page-action-prop
+            [e] if
+                [v] $hasEmptyState
+                [e] then
+                    [e] write-pattern
+                        [v] page-empty-prop
+            [e] write-pattern
+                [v] page-close
+    [e] templates
+        [e] mode
+            [v] cardField
+            [e] template
+                [e] match
+                    [v] field
+                [e] body
+                    [e] write-pattern
+                        [v] field-line

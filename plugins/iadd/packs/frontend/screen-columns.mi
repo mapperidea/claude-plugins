@@ -1,0 +1,472 @@
+[e] screenColumns
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] mapNativeTypes
+            [e] select
+                [v] //maps/mapNativeTypes
+        [e] screenClass
+            [e] select
+                [v] /classes/class[@name = $modelName and @package = $package]
+        [e] objectType
+            [e] expr
+                [v] $screenClass/attributes/attribute[@name = 'object']/@type
+        [e] beanLower
+            [e] expr
+                [v] mi:first-lower($objectType)
+        [e] domainClass
+            [e] select
+                [v] /classes/class[@name = $objectType and @mode = 'bean']
+        [e] hasRowActions
+            [e] expr
+                [v] exists($screenClass/actions/action[properties/type/value = 'row'])
+        [e] hasLinkAction
+            [e] expr
+                [v] exists($screenClass/actions/action[properties/type/value = 'row' and exists(properties/opens)])
+        [e] hasMultipleRowActions
+            [e] expr
+                [v] count($screenClass/actions/action[properties/type/value = 'row']) > 1
+        [e] hasBadge
+            [e] expr
+                [v] some $f in $screenClass/columns/field satisfies ((not(contains(substring($f/value,2),'.')) and ($f/properties/display/value = 'badge' or exists($domainClass/attributes/attribute[@name = substring($f/value,2)]/properties/values))) or (contains(substring($f/value,2),'.') and not(contains(substring-after(substring($f/value,2),'.'),'.')) and $f/properties/display/value = 'badge'))
+        [e] hasCnpjMask
+            [e] expr
+                [v] exists($screenClass/columns/field[properties/mask/value = 'cnpj'])
+        [e] hasCurrency
+            [e] expr
+                [v] exists($screenClass/columns/field[not(exists(properties/mask)) and properties/display/value = 'currency'])
+        [e] hasRowDetail
+            [e] expr
+                [v] exists($screenClass/rowDetail/value)
+        [e] customField
+            [e] select
+                [v] $screenClass/columns/field[properties/display/value = 'custom'][1]
+        [e] hasCustomField
+            [e] expr
+                [v] exists($customField)
+        [e] customComponent
+            [e] expr
+                [v] mi:if-else($hasCustomField, string($customField/properties/component/value), '')
+        [e] hasMultipleCustomFields
+            [e] expr
+                [v] count($screenClass/columns/field[properties/display/value = 'custom']) > 1
+        [e] hasDate
+            [e] expr
+                [v] some $f in $screenClass/columns/field satisfies (not(exists($f/properties/mask)) and not($f/properties/display/value = 'badge') and not($f/properties/display/value = 'currency') and ($f/properties/display/value = 'date' or $f/properties/display/value = 'dateTime' or $domainClass/attributes/attribute[@name = substring($f/value,2)]/@type = $mapNativeTypes/Date/value or $domainClass/attributes/attribute[@name = substring($f/value,2)]/@type = $mapNativeTypes/DateTime/value))
+        [e] enumLabelImports
+            [e] expr
+                [v] string-join(distinct-values(for $f in $screenClass/columns/field return if (not(contains(substring($f/value,2),'.')) and ($f/properties/display/value = 'badge' or exists($domainClass/attributes/attribute[@name = substring($f/value,2)]/properties/values))) then concat(substring($f/value,2),'Labels') else ()), ', ')
+        [e] joinBadgeField
+            [e] select
+                [v] $screenClass/columns/field[contains(substring(value,2),'.') and not(contains(substring-after(substring(value,2),'.'),'.')) and properties/display/value = 'badge'][1]
+        [e] hasJoinBadge
+            [e] expr
+                [v] exists($joinBadgeField)
+        [e] joinEntity
+            [e] expr
+                [v] mi:if-else($hasJoinBadge, substring-before(substring($joinBadgeField/value,2),'.'), '')
+        [e] joinField
+            [e] expr
+                [v] mi:if-else($hasJoinBadge, substring-after(substring($joinBadgeField/value,2),'.'), '')
+        [e] joinLabelAlias
+            [e] expr
+                [v] mi:if-else($hasJoinBadge, concat($joinEntity, mi:first-upper($joinField), 'Labels'), '')
+        [e] formatImports
+            [e] expr
+                [v] string-join((if ($hasDate) then 'formatDate' else (), if ($hasCnpjMask) then 'maskCNPJ' else ()), ', ')
+    [e] fragments
+        [e] accessorKey
+            [v] substring(value,2)
+        [e] header
+            [v] mi:if-else(exists(properties/label/pt/value), string(properties/label/pt/value), string(for $a in substring(value,2) return $domainClass/attributes/attribute[@name = $a]/properties/title/pt/value))
+        [e] sortableSuffix
+            [v] mi:if-else(properties/sortable/value = 'false', ', enableSorting: false', '')
+        [e] filterFnSuffix
+            [v] mi:if-else(exists(for $a in substring(value,2) return $domainClass/attributes/attribute[@name = $a]/properties/values), ', filterFn: "equalsString"', '')
+        [e] conditionAttr
+            [v] normalize-space(substring-before(properties/condition/value, '!='))
+        [e] conditionValue
+            [v] substring-before(substring-after(properties/condition/value, "'"), "'")
+        [e] linkTo
+            [v] string(for $o in properties/opens/value return /classes/class[@name = $o]/properties/route/value)
+    [e] patterns
+        [e] header-import-columndef
+            [v] // GERADO por: mi generate <projeto> frontend screenColumns modelName={{ @name }} package={{ @package }}
+            [v] // Fonte: mapa de tela {{ @name }} + dominio {{ $objectType }}. NAO editar a mao — rode o gerador.
+            [v] import type { ColumnDef } from "@tanstack/react-table"
+        [e] header-import-lucide
+            [v] import { Eye{{ mi:if-else($hasMultipleRowActions, ', MoreVertical', '') }}{{ mi:if-else($hasRowDetail, ', ChevronDown', '') }} } from "lucide-react"
+        [e] header-import-link
+            [v] import { Link } from "@tanstack/react-router"
+        [e] header-import-badge
+            [v] import { StatusBadge } from "@/components/ui/status-badge"
+        [e] header-import-custom
+            [v] import { {{ $customComponent }} } from "./{{ $customComponent }}"
+        [e] custom-multiple-todo
+            [v] // @TODO mais de um field display=custom no mapa — v1 do gerador screenColumns usa somente o primeiro ({{ $customComponent }})
+        [e] header-import-currency-value
+            [v] import { CurrencyValue } from "@/components/ui/currency-value"
+        [e] header-import-button
+            [v] import { Button } from "@/components/ui/button"
+        [e] header-import-dropdown-menu
+            [v] import {
+            [v]   DropdownMenu,
+            [v]   DropdownMenuContent,
+            [v]   DropdownMenuItem,
+            [v]   DropdownMenuTrigger,
+            [v] } from "@/components/ui/dropdown-menu"
+        [e] header-import-schema
+            [v] import { type {{ $objectType }}{{ mi:if-else($enumLabelImports != '', concat(', ', $enumLabelImports), '') }} } from "@/gen/schemas/{{ $beanLower }}"
+        [e] header-import-schema-join
+            [v] import { {{ $joinField }}Labels as {{ $joinLabelAlias }} } from "@/gen/schemas/{{ $joinEntity }}"
+        [e] header-import-format
+            [v] import { {{ $formatImports }} } from "@/runtime/format"
+        [e] blankLine
+            [v]
+        [e] export-start
+            [v] export const {{ $beanLower }}Columns: ColumnDef<{{ $objectType }}, unknown>[] = [
+        [e] export-end
+            [v] ]
+        [e] field-badge
+            [v]   { accessorKey: "{{ f#[accessorKey] }}", header: "{{ f#[header] }}"{{ f#[filterFnSuffix] }}{{ f#[sortableSuffix] }}, cell: ({ row }) => <StatusBadge status={row.original.{{ f#[accessorKey] }}} label={ {{ f#[accessorKey] }}Labels[row.original.{{ f#[accessorKey] }}] } /> },
+        [e] field-badge-optional
+            [v]   { accessorKey: "{{ f#[accessorKey] }}", header: "{{ f#[header] }}"{{ f#[filterFnSuffix] }}{{ f#[sortableSuffix] }}, cell: ({ row }) => (row.original.{{ f#[accessorKey] }} ? <StatusBadge status={row.original.{{ f#[accessorKey] }}} label={ {{ f#[accessorKey] }}Labels[row.original.{{ f#[accessorKey] }}] } /> : "—") },
+        [e] field-custom
+            [v]   { id: "{{ f#[accessorKey] }}", header: "{{ f#[header] }}", enableSorting: false, cell: ({ row }) => <{{ $customComponent }} {{ $beanLower }}={row.original} /> },
+        [e] field-mask-cnpj
+            [v]   { accessorKey: "{{ f#[accessorKey] }}", header: "{{ f#[header] }}"{{ f#[filterFnSuffix] }}{{ f#[sortableSuffix] }}, cell: ({ row }) => maskCNPJ(row.original.{{ f#[accessorKey] }}) },
+        [e] field-mask-cpf-todo
+            [v]   // @TODO maskCPF nao implementado em runtime/format — usando valor cru para {{ f#[accessorKey] }}
+            [v]   { accessorKey: "{{ f#[accessorKey] }}", header: "{{ f#[header] }}"{{ f#[filterFnSuffix] }}{{ f#[sortableSuffix] }}, cell: ({ row }) => row.original.{{ f#[accessorKey] }} },
+        [e] field-mask-other-todo
+            [v]   // @TODO mask nao tratada ({{ properties/mask/value }}) para {{ f#[accessorKey] }}
+            [v]   { accessorKey: "{{ f#[accessorKey] }}", header: "{{ f#[header] }}"{{ f#[filterFnSuffix] }}{{ f#[sortableSuffix] }}, cell: ({ row }) => row.original.{{ f#[accessorKey] }} },
+        [e] field-currency
+            [v]   { accessorKey: "{{ f#[accessorKey] }}", header: "{{ f#[header] }}"{{ f#[filterFnSuffix] }}{{ f#[sortableSuffix] }}, cell: ({ row }) => <CurrencyValue value={row.original.{{ f#[accessorKey] }}} /> },
+        [e] field-date
+            [v]   { accessorKey: "{{ f#[accessorKey] }}", header: "{{ f#[header] }}"{{ f#[filterFnSuffix] }}{{ f#[sortableSuffix] }}, cell: ({ row }) => (row.original.{{ f#[accessorKey] }} ? formatDate(row.original.{{ f#[accessorKey] }}) : "—") },
+        [e] field-boolean
+            [v]   { accessorKey: "{{ f#[accessorKey] }}", header: "{{ f#[header] }}"{{ f#[filterFnSuffix] }}{{ f#[sortableSuffix] }}, cell: ({ row }) => (row.original.{{ f#[accessorKey] }} ? "Sim" : "Não") },
+        [e] field-text
+            [v]   { accessorKey: "{{ f#[accessorKey] }}", header: "{{ f#[header] }}"{{ f#[filterFnSuffix] }}{{ f#[sortableSuffix] }}, cell: ({ row }) => row.original.{{ f#[accessorKey] }} },
+        [e] field-join-badge
+            [v]   { accessorKey: "{{ f#[accessorKey] }}", header: "{{ f#[header] }}"{{ f#[sortableSuffix] }}, cell: ({ row }) => <StatusBadge status={row.original.{{ $joinEntity }}?.{{ $joinField }} ?? ""} label={row.original.{{ $joinEntity }} ? {{ $joinLabelAlias }}[row.original.{{ $joinEntity }}.{{ $joinField }} as keyof typeof {{ $joinLabelAlias }}] : "—"} /> },
+        [e] field-todo-join
+            [v]   // @TODO campo relacionado (join) nao suportado no v1 do gerador screen: {{ value }}
+        [e] field-todo-unknown
+            [v]   // @TODO atributo "{{ substring(value,2) }}" nao encontrado no dominio {{ $objectType }} (field {{ value }})
+        [e] actionsColumnStart
+            [v]   {
+            [v]     id: "acoes",
+            [v]     header: "Ações",
+            [v]     enableSorting: false,
+            [v]     cell: ({ row }) => (
+            [v]       <div className="flex items-center justify-end gap-1">
+        [e] actionsColumnEnd
+            [v]       </div>
+            [v]     ),
+            [v]   },
+        [e] actionsDropdownStart
+            [v]         <DropdownMenu>
+            [v]           <DropdownMenuTrigger asChild>
+            [v]             <Button variant="ghost" size="icon" aria-label="Mais ações" onClick={(e) => e.stopPropagation()}>
+            [v]               <MoreVertical className="size-4" aria-hidden />
+            [v]             </Button>
+            [v]           </DropdownMenuTrigger>
+            [v]           <DropdownMenuContent align="end">
+        [e] actionsDropdownEnd
+            [v]           </DropdownMenuContent>
+            [v]         </DropdownMenu>
+        [e] actionsChevronDecorative
+            [v]         <ChevronDown className={`size-4 shrink-0 text-muted-foreground transition-transform duration-[250ms] ease-in-out ${row.getIsExpanded() ? "rotate-180" : ""}`} aria-hidden />
+        [e] rowActionEyeLink
+            [v]         <Button variant="ghost" size="icon" asChild aria-label="{{ properties/label/pt/value }}">
+            [v]           <Link to="{{ f#[linkTo] }}" params={\{ id: row.original.id! }\} onClick={(e) => e.stopPropagation()}>
+            [v]             <Eye className="size-4" aria-hidden />
+            [v]           </Link>
+            [v]         </Button>
+        [e] rowActionEye
+            [v]         <Button variant="ghost" size="icon" aria-label="{{ properties/label/pt/value }}" onClick={(e) => { e.stopPropagation(); console.info("{{ value }}", row.original.id) }\}>
+            [v]           <Eye className="size-4" aria-hidden />
+            [v]         </Button>
+        [e] rowActionEyeConditional
+            [v]         <Button
+            [v]           variant="ghost"
+            [v]           size="icon"
+            [v]           aria-label="{{ properties/label/pt/value }}"
+            [v]           disabled={row.original.{{ f#[conditionAttr] }} === "{{ f#[conditionValue] }}"}
+            [v]           onClick={(e) => { e.stopPropagation(); console.info("{{ value }}", row.original.id) }\}
+            [v]         >
+            [v]           <Eye className="size-4" aria-hidden />
+            [v]         </Button>
+        [e] rowActionEyeConditionTodo
+            [v]         {{ concat('{/* @TODO condition nao traduzida: ', properties/condition/value, ' */}') }}
+            [v]         <Button variant="ghost" size="icon" aria-label="{{ properties/label/pt/value }}" onClick={(e) => { e.stopPropagation(); console.info("{{ value }}", row.original.id) }\}>
+            [v]           <Eye className="size-4" aria-hidden />
+            [v]         </Button>
+        [e] rowActionItemLink
+            [v]           <DropdownMenuItem asChild>
+            [v]             <Link to="{{ f#[linkTo] }}" params={\{ id: row.original.id! }\}>
+            [v]               {{ properties/label/pt/value }}
+            [v]             </Link>
+            [v]           </DropdownMenuItem>
+        [e] rowActionItem
+            [v]           <DropdownMenuItem onSelect={() => console.info("{{ value }}", row.original.id)}>
+            [v]             {{ properties/label/pt/value }}
+            [v]           </DropdownMenuItem>
+        [e] rowActionItemConditional
+            [v]           <DropdownMenuItem
+            [v]             disabled={row.original.{{ f#[conditionAttr] }} === "{{ f#[conditionValue] }}"}
+            [v]             onSelect={() => console.info("{{ value }}", row.original.id)}
+            [v]           >
+            [v]             {{ properties/label/pt/value }}
+            [v]           </DropdownMenuItem>
+        [e] rowActionItemConditionTodo
+            [v]           {{ concat('{/* @TODO condition nao traduzida: ', properties/condition/value, ' */}') }}
+            [v]           <DropdownMenuItem onSelect={() => console.info("{{ value }}", row.original.id)}>
+            [v]             {{ properties/label/pt/value }}
+            [v]           </DropdownMenuItem>
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [e] write-pattern
+                [v] header-import-columndef
+            [e] if
+                [v] $hasRowActions
+                [e] then
+                    [e] write-pattern
+                        [v] header-import-lucide
+            [e] if
+                [v] $hasLinkAction
+                [e] then
+                    [e] write-pattern
+                        [v] header-import-link
+            [e] if
+                [v] $hasBadge
+                [e] then
+                    [e] write-pattern
+                        [v] header-import-badge
+            [e] if
+                [v] $hasCustomField
+                [e] then
+                    [e] write-pattern
+                        [v] header-import-custom
+            [e] if
+                [v] $hasMultipleCustomFields
+                [e] then
+                    [e] write-pattern
+                        [v] custom-multiple-todo
+            [e] if
+                [v] $hasCurrency
+                [e] then
+                    [e] write-pattern
+                        [v] header-import-currency-value
+            [e] if
+                [v] $hasRowActions
+                [e] then
+                    [e] write-pattern
+                        [v] header-import-button
+            [e] if
+                [v] $hasMultipleRowActions
+                [e] then
+                    [e] write-pattern
+                        [v] header-import-dropdown-menu
+            [e] write-pattern
+                [v] header-import-schema
+            [e] if
+                [v] $hasJoinBadge
+                [e] then
+                    [e] write-pattern
+                        [v] header-import-schema-join
+            [e] if
+                [v] $formatImports != ''
+                [e] then
+                    [e] write-pattern
+                        [v] header-import-format
+            [e] write-pattern
+                [v] blankLine
+            [e] write-pattern
+                [v] export-start
+            [e] apply-templates
+                [e] select
+                    [v] columns/field
+                [e] mode
+                    [v] columns
+            [e] if
+                [v] $hasRowActions
+                [e] then
+                    [e] write-pattern
+                        [v] actionsColumnStart
+                    [e] apply-templates
+                        [e] select
+                            [v] actions/action[properties/type/value = 'row'][1]
+                        [e] mode
+                            [v] rowActionEye
+                    [e] if
+                        [v] $hasMultipleRowActions
+                        [e] then
+                            [e] write-pattern
+                                [v] actionsDropdownStart
+                            [e] apply-templates
+                                [e] select
+                                    [v] actions/action[properties/type/value = 'row'][position() > 1]
+                                [e] mode
+                                    [v] rowAction
+                            [e] write-pattern
+                                [v] actionsDropdownEnd
+                    [e] if
+                        [v] $hasRowDetail
+                        [e] then
+                            [e] write-pattern
+                                [v] actionsChevronDecorative
+                    [e] write-pattern
+                        [v] actionsColumnEnd
+            [e] write-pattern
+                [v] export-end
+    [e] templates
+        [e] mode
+            [v] columns
+            [e] template
+                [e] match
+                    [v] field
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] attr
+                            [e] expr
+                                [v] substring(value,2)
+                        [e] var
+                            [v] domAttr
+                            [e] expr
+                                [v] $domainClass/attributes/attribute[@name = $attr]
+                        [e] var
+                            [v] joinEntity
+                            [e] expr
+                                [v] mi:if-else(contains($attr,'.'), substring-before($attr,'.'), '')
+                        [e] var
+                            [v] joinField
+                            [e] expr
+                                [v] mi:if-else(contains($attr,'.'), substring-after($attr,'.'), '')
+                        [e] var
+                            [v] joinLabelAlias
+                            [e] expr
+                                [v] mi:if-else(contains($attr,'.'), concat($joinEntity, mi:first-upper($joinField), 'Labels'), '')
+                    [e] if
+                        [v] contains($attr,'.') and not(contains(substring-after($attr,'.'),'.')) and properties/display/value = 'badge'
+                        [e] then
+                            [e] write-pattern
+                                [v] field-join-badge
+                        [e] else-if
+                            [v] contains($attr,'.')
+                            [e] then
+                                [e] write-pattern
+                                    [v] field-todo-join
+                        [e] else-if
+                            [v] properties/display/value = 'custom'
+                            [e] then
+                                [e] write-pattern
+                                    [v] field-custom
+                        [e] else-if
+                            [v] not(exists($domAttr))
+                            [e] then
+                                [e] write-pattern
+                                    [v] field-todo-unknown
+                        [e] else-if
+                            [v] (properties/display/value = 'badge' or exists($domAttr/properties/values)) and not(exists($domAttr/properties/required))
+                            [e] then
+                                [e] write-pattern
+                                    [v] field-badge-optional
+                        [e] else-if
+                            [v] properties/display/value = 'badge' or exists($domAttr/properties/values)
+                            [e] then
+                                [e] write-pattern
+                                    [v] field-badge
+                        [e] else-if
+                            [v] properties/mask/value = 'cnpj'
+                            [e] then
+                                [e] write-pattern
+                                    [v] field-mask-cnpj
+                        [e] else-if
+                            [v] properties/mask/value = 'cpf'
+                            [e] then
+                                [e] write-pattern
+                                    [v] field-mask-cpf-todo
+                        [e] else-if
+                            [v] exists(properties/mask)
+                            [e] then
+                                [e] write-pattern
+                                    [v] field-mask-other-todo
+                        [e] else-if
+                            [v] properties/display/value = 'currency'
+                            [e] then
+                                [e] write-pattern
+                                    [v] field-currency
+                        [e] else-if
+                            [v] properties/display/value = 'date' or properties/display/value = 'dateTime' or $domAttr/@type = $mapNativeTypes/Date/value or $domAttr/@type = $mapNativeTypes/DateTime/value
+                            [e] then
+                                [e] write-pattern
+                                    [v] field-date
+                        [e] else-if
+                            [v] properties/display/value = 'boolean' or $domAttr/@type = $mapNativeTypes/Boolean/value
+                            [e] then
+                                [e] write-pattern
+                                    [v] field-boolean
+                        [e] else
+                            [e] write-pattern
+                                [v] field-text
+        [e] mode
+            [v] rowActionEye
+            [e] template
+                [e] match
+                    [v] action[exists(properties/opens)]
+                [e] body
+                    [e] write-pattern
+                        [v] rowActionEyeLink
+            [e] template
+                [e] match
+                    [v] action[not(exists(properties/condition)) and not(exists(properties/opens))]
+                [e] body
+                    [e] write-pattern
+                        [v] rowActionEye
+            [e] template
+                [e] match
+                    [v] action[exists(properties/condition) and contains(properties/condition/value,'!=') and contains(properties/condition/value,"'")]
+                [e] body
+                    [e] write-pattern
+                        [v] rowActionEyeConditional
+            [e] template
+                [e] match
+                    [v] action
+                [e] body
+                    [e] write-pattern
+                        [v] rowActionEyeConditionTodo
+        [e] mode
+            [v] rowAction
+            [e] template
+                [e] match
+                    [v] action[exists(properties/opens)]
+                [e] body
+                    [e] write-pattern
+                        [v] rowActionItemLink
+            [e] template
+                [e] match
+                    [v] action[not(exists(properties/condition)) and not(exists(properties/opens))]
+                [e] body
+                    [e] write-pattern
+                        [v] rowActionItem
+            [e] template
+                [e] match
+                    [v] action[exists(properties/condition) and contains(properties/condition/value,'!=') and contains(properties/condition/value,"'")]
+                [e] body
+                    [e] write-pattern
+                        [v] rowActionItemConditional
+            [e] template
+                [e] match
+                    [v] action
+                [e] body
+                    [e] write-pattern
+                        [v] rowActionItemConditionTodo

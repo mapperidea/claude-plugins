@@ -1,0 +1,1642 @@
+[e] mapper
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] mapNativeTypes
+            [e] select
+                [v] //maps/mapNativeTypes
+        [e] classes
+            [e] select
+                [v] /classes
+        [e] inicioPacote
+            [e] expr
+                [v] concat(substring-before($package, '.domain.'), '.domain.')
+        [e] transactionManager
+            [e] expr
+                [v] /classes/package[@name = $package]/properties/transaction/value
+        [e] classSchema
+            [e] select
+                [v] /classes/class[@name = 'CurrentSchema']
+        [e] map
+            [e] select
+                [v] $classSchema/properties/projectNames/map/value
+    [e] fragments
+        [e] tabulaDescription
+            [v] for $linha in functx:lines(string-join(properties/description/pt/value,codepoints-to-string(10))) return mi:tabulate-text(concat(normalize-space($linha),codepoints-to-string(10)),'* ',80)
+        [e] paramSeparator
+            [v] mi:if-else(position() = last(), '', ',')
+    [e] patterns
+        [g] package e imports
+            [e] package
+                [v] package {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.mapper;
+                [v] 
+            [e] importsPadrao
+                [v] import {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.domain.{{ @name }};
+                [v] import {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.entity.{{ @name }}Entity;
+                [v] import {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.builder.{{ @name }}EntityBuilder;
+                [v] import {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.repository.{{ @name }}Repository;
+                [v] 
+                [v] import jakarta.enterprise.context.ApplicationScoped;
+                [v] import jakarta.inject.Inject;
+                [v] import java.util.ArrayList;
+                [v] import java.util.List;
+                [v] import {{ substring-before(@package,'.domain.') }}.exceptions.NotFoundException;
+            [e] importAttribute
+                [v] import {{ substring-before($package, '.domain.') }}.{{ $packageAttribute }}domain.{{ $nameAttribute }};
+            [e] importAttribute-entity
+                [v] import {{ substring-before($package, '.domain.') }}.{{ $packageAttribute }}entity.{{ $nameAttribute }}Entity;
+            [e] importAttribute-mapper
+                [v] import {{ substring-before($package, '.domain.') }}.{{ $packageAttribute }}mapper.{{ $nameAttribute }}Mapper;
+            [e] importAttribute-LocalDate
+                [v] import java.time.LocalDate;
+            [e] importAttribute-LocalDateTime
+                [v] import java.time.LocalDateTime;
+            [e] importAttribute-DateTimeFormatter
+                [v] import java.time.format.DateTimeFormatter;
+        [g] class
+            [e] class-start
+                [v] 
+                [v] @ApplicationScoped
+                [v] public class {{ @name }}Mapper {
+                [v] 
+                [v]     @Inject {{ @name }}Repository repository;
+            [e] constructor-start
+                [v] 
+                [v]     public {{ @name }}Mapper(
+            [e] constructor-body-start
+                [v]         {{ @name }}Repository repository
+                [v]     ) {
+            [e] constructor-close
+                [v]         this.repository = repository;
+                [v]     }
+            [e] attribute-mapper
+                [v] 
+                [v]     @Inject 
+                [v]     {{ $typeClassName }}Mapper {{ mi:first-lower($typeClassName) }}Mapper;
+            [e] constructor-mapper-param
+                [v]         {{ $typeClassName }}Mapper {{ mi:first-lower($typeClassName) }}Mapper,
+            [e] constructor-mapper-init
+                [v]         this.{{ mi:first-lower($typeClassName) }}Mapper = {{ mi:first-lower($typeClassName) }}Mapper;
+            [e] class-close
+                [v] 
+                [v] }
+            [g] methods
+                [g] entityToApi
+                    [e] entityToApi-start
+                        [v] 
+                        [v]     public {{ @name }} entityToApi({{ @name }}Entity entity) {
+                        [v]         if ( entity == null ) {
+                        [v]             return null;
+                        [v]         }
+                        [v] 
+                        [v]         {{ @name }} {{ mi:first-lower(@name) }} = new {{ @name }}();
+                        [v] 
+                        [v]         {{ mi:first-lower(@name) }}.setVersion( entity.getVersion() );
+                    [e] entityToApi-close
+                        [v] 
+                        [v]         this.setApiDefaultValues({{ mi:first-lower(@name) }});
+                        [v] 
+                        [v]         return {{ mi:first-lower(@name) }};
+                        [v]     }
+                    [g] set
+                        [e] entityToApi-SetDirectToField
+                            [v]         {{ $className }}.set{{ mi:first-upper(@name) }}( entity.get{{ mi:first-upper(@name) }}() );
+                        [e] entityToApi-SetOneToOne
+                            [y]         {{ $className }}.set{{ mi:first-upper(@name) }}(
+                            [y] {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.entityToApi(entity.get{{ mi:first-upper(@name) }}() )
+                            [v] );
+                        [e] entityToApi-SetManyToOne
+                            [v]         if ( entity.get{{ mi:first-upper(@name) }}() != null ) {
+                            [v]             {{ mi:first-upper($typeName) }} {{ mi:first-lower(@name) }}Ref = new {{ mi:first-upper($typeName) }}();
+                            [v]             {{ mi:first-lower(@name) }}Ref.setId( entity.get{{ mi:first-upper(@name) }}().getId() );
+                            [v]             {{ $className }}.set{{ mi:first-upper(@name) }}( {{ mi:first-lower(@name) }}Ref );
+                            [v]         }
+                        [e] entityToApi-SetComposite
+                            [y]         {{ $className }}.set{{ mi:first-upper(@name) }}(
+                            [y] {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.entityToApi(entity.get{{ mi:first-upper(@name) }}() )
+                            [v] );
+                        [e] entityToApi-SetOneToMany
+                            [y]         {{ $className }}.set{{ mi:first-upper(@name) }}(
+                            [y] {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.entityListToApiList( entity.get{{ mi:first-upper(@name) }}() )
+                            [v] );
+                [g] apiToEntity
+                    [e] apiToEntity-start
+                        [v] 
+                        //
+                            [v]     @Transactional(propagation = Propagation.REQUIRED, transactionManager = "{{ $transactionManager }}TransactionManager")
+                        [v]     public {{ @name }}Entity apiToEntity({{ @name }} api) {
+                        [v]         if ( api == null ) {
+                        [v]             return null;
+                        [v]         }
+                        [v]         {{ @name }}Entity entity = null;
+                        [v] 
+                    [e] apiToEntity-weakRef-start
+                        [v]         if (api.isWeakReference()) {
+                        [v]             if (api.isIdDefined()) {
+                        [v]                 entity = repository.findByIdOptional(api.getId()).orElseThrow(() -> new NotFoundException("No entity {{ @name }} found for Id: " + api.getId()));
+                    [e] apiToEntity-weakRef-idErp
+                        [v]             } else if (api.isIdErpDefined()) {
+                        [v]                 entity = repository.findByIdErp(api.getIdErp()).orElseThrow(() -> new NotFoundException("No entity {{ @name }} found for idErp: " + api.getIdErp()));
+                    [e] apiToEntity-weakRef-uuid
+                        [v]             } else if (api.isUuidDefined()) {
+                        [v]                 entity = repository.findByUuid(api.getUuid()).orElseThrow(() -> new NotFoundException("No entity {{ @name }} found for uuid: " + api.getUuid()));
+                    [e] apiToEntity-weakRef-SK
+                        [v]             } else if (api.isSecondaryKeyDefined()) {
+                        [v]                 Example<{{ @name }}Entity> sk = Example.of({{ @name }}Entity.builderOf()
+                        [v]                     .withModel(api)
+                        [v]                     .build()
+                        [v]                 );
+                        [y]                 entity = repository.findOne(sk).orElseThrow(() -> new NotFoundException("No estado found for SK: "
+                    [e] apiToEntity-weakRef-SK-attribute
+                        [y]  + " {{ @name }}=" + api.get{{ mi:first-upper(@name) }}()
+                    [e] apiToEntity-weakRef-SK-end
+                        [v] ));
+                    [e] apiToEntity-weakRef-close
+                        [v]             }
+                        [v]         } else {
+                        [v]             {{ @name }}EntityBuilder {{ mi:first-lower(@name) }}Builder = {{ @name }}Entity.builderOf();
+                        [v] 
+                        [v]             {{ mi:first-lower(@name) }}Builder.version = api.getVersion();
+                    [e] apiToEntity-close
+                        [v]             entity = {{ mi:first-lower(@name) }}Builder.build();
+                        [v]             this.setEntityDefaultValues(entity);
+                        [v]         }
+                        [v] 
+                        [v]         return entity;
+                        [v]     }
+                    [g] get
+                        [e] apiToEntity-getDirectToField
+                            [v]             {{ $className }}Builder.{{ @name }} = api.get{{ mi:first-upper(@name) }}();
+                        [e] apiToEntity-getOneToOne
+                            [y]             {{ $className }}Builder.{{ @name }} = 
+                            [y] {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.apiToEntity(
+                            [y] api.get{{ mi:first-upper(@name) }}()
+                            [v] );
+                        [e] apiToEntity-getManyToOne
+                            [y]             {{ $className }}Builder.{{ @name }} = 
+                            [y] {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.apiToEntity(
+                            [y] api.get{{ mi:first-upper(@name) }}()
+                            [v] );
+                        [e] apiToEntity-getComposite
+                            [y]             {{ $className }}Builder.{{ @name }} = 
+                            [y] {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.apiToEntity(
+                            [y] api.get{{ mi:first-upper(@name) }}()
+                            [v] );
+                        [e] apiToEntity-getOneToMany
+                            [y]             {{ $className }}Builder.{{ @name }} = 
+                            [y] {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.apiListToEntityList(
+                            [y] api.get{{ mi:first-upper(@name) }}()
+                            [v] );
+                [g] entityListToApiList
+                    [e] entityListToApiList
+                        [v] 
+                        [v]     public List<{{ @name }}> entityListToApiList(List<{{ @name }}Entity> entity) {
+                        [v]         if ( entity == null ) {
+                        [v]             return null;
+                        [v]         }
+                        [v] 
+                        [v]         List<{{ @name }}> list = new ArrayList<{{ @name }}>( entity.size() );
+                        [v]         for ( {{ @name }}Entity {{ mi:first-lower(@name) }}Entity : entity ) {
+                        [v]             list.add( entityToApi( {{ mi:first-lower(@name) }}Entity ) );
+                        [v]         }
+                        [v] 
+                        [v]         return list;
+                        [v]     }
+                [g] apiListToEntityList
+                    [e] apiListToEntityList
+                        [v] 
+                        [v]     public List<{{ @name }}Entity> apiListToEntityList(List<{{ @name }}> api) {
+                        [v]         if ( api == null ) {
+                        [v]             return null;
+                        [v]         }
+                        [v] 
+                        [v]         List<{{ @name }}Entity> list = new ArrayList<{{ @name }}Entity>( api.size() );
+                        [v]         for ( {{ @name }} {{ mi:first-lower(@name) }} : api ) {
+                        [v]             list.add( apiToEntity( {{ mi:first-lower(@name) }} ) );
+                        [v]         }
+                        [v] 
+                        [v]         return list;
+                        [v]     }
+                [g] updateEntityToApi
+                    [e] updateEntityToApi-start
+                        [v] 
+                        [v]     public {{ @name }} updateEntityToApi({{ @name }}Entity entity, {{ @name }} api) {
+                        [v]         if ( entity == null ) {
+                        [v]             return null;
+                        [v]         }
+                        [v] 
+                        [v]         api.setVersion( entity.getVersion() );
+                    [e] updateEntityToApi-close
+                        [v] 
+                        [v]         this.setApiDefaultValues(api);
+                        [v] 
+                        [v]         return api;
+                        [v]     }
+                    [g] set
+                        [e] updateEntityToApi-setDirectToField
+                            [v]         api.set{{ mi:first-upper(@name) }}( entity.get{{ mi:first-upper(@name) }}() );
+                        [e] updateEntityToApi-setOneToOne
+                            [v] 
+                            [v]         if ( entity.get{{ mi:first-upper(@name) }}() != null ) {
+                            [v]             if ( api.get{{ mi:first-upper(@name) }}() == null ) {
+                            [v]                 api.set{{ mi:first-upper(@name) }}( new {{ mi:first-upper($typeName) }}() );
+                            [v]             }
+                            [v]             {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.updateEntityToApi(entity.get{{ mi:first-upper(@name) }}(), api.get{{ mi:first-upper(@name) }}());
+                            [v]         } else {
+                            [v]             api.set{{ mi:first-upper(@name) }}( null );
+                            [v]         }
+                        [e] updateEntityToApi-setManyToOne
+                            [v]
+                            [v]         if ( entity.get{{ mi:first-upper(@name) }}() != null ) {
+                            [v]             {{ mi:first-upper($typeName) }} {{ mi:first-lower(@name) }}Ref = new {{ mi:first-upper($typeName) }}();
+                            [v]             {{ mi:first-lower(@name) }}Ref.setId( entity.get{{ mi:first-upper(@name) }}().getId() );
+                            [v]             api.set{{ mi:first-upper(@name) }}( {{ mi:first-lower(@name) }}Ref );
+                            [v]         } else {
+                            [v]             api.set{{ mi:first-upper(@name) }}( null );
+                            [v]         }
+                        [e] updateEntityToApi-setComposite
+                            [v] 
+                            [v]         if ( entity.get{{ mi:first-upper(@name) }}() != null ) {
+                            [v]             if ( api.get{{ mi:first-upper(@name) }}() == null ) {
+                            [v]                 api.set{{ mi:first-upper(@name) }}( new {{ mi:first-upper($typeName) }}() );
+                            [v]             }
+                            [v]             {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.updateEntityToApi(entity.get{{ mi:first-upper(@name) }}(), api.get{{ mi:first-upper(@name) }}());
+                            [v]         } else {
+                            [v]             api.set{{ mi:first-upper(@name) }}( null );
+                            [v]         }
+                        [e] updateEntityToApi-setOneToMany
+                            [v] 
+                            [v]         if ( api.get{{ mi:first-upper(@name) }}() != null ) {
+                            //
+                                [v]             List<{{ $typeName }}> list = {{ mi:first-lower($typeName) }}EntityListTo{{ mi:first-upper($typeName) }}List( entity.get{{ mi:first-upper(@name) }}() );
+                                List<ItemPedido> list = ItemPedidoMapper.entityListToApiList( entity.getItens() );
+                            [v]             List<{{ $typeName }}> list = {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.entityListToApiList( entity.get{{ mi:first-upper(@name) }}() );
+                            [v]             if ( list != null ) {
+                            [v]                 api.get{{ mi:first-upper(@name) }}().clear();
+                            [v]                 api.get{{ mi:first-upper(@name) }}().addAll( list );
+                            [v]             } else {
+                            [v]                 api.set{{ mi:first-upper(@name) }}( null );
+                            [v]             }
+                            [v]         } else {
+                            [v]             List<{{ $typeName }}> list = {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.entityListToApiList( entity.get{{ mi:first-upper(@name) }}() );
+                            [v]             if ( list != null ) {
+                            [v]                 api.set{{ mi:first-upper(@name) }}( list );
+                            [v]             }
+                            [v]         }
+                [g] updateApiToEntity
+                    [e] updateApiToEntity-start
+                        [v] 
+                        //
+                            [v]     @Transactional(propagation = Propagation.REQUIRED, transactionManager = "{{ $transactionManager }}TransactionManager")
+                        [v]     public {{ @name }}Entity updateApiToEntity({{ @name }} api, {{ @name }}Entity entity) {
+                        [v]         if ( api == null ) {
+                        [v]             return null;
+                        [v]         }
+                        [v] 
+                    [e] updateApiToEntity-weakRef-start
+                        [v]         if (api.isWeakReference()) {
+                        [v]             if (api.isIdDefined()) {
+                        [v]                 entity = repository.findByIdOptional(api.getId()).orElseThrow(() -> new NotFoundException("No entity {{ @name }} found for Id: " + api.getId()));
+                    [e] updateApiToEntity-weakRef-idErp
+                        [v]             } else if (api.isIdErpDefined()) {
+                        [v]                 entity = repository.findByIdErp(api.getIdErp()).orElseThrow(() -> new NotFoundException("No entity {{ @name }} found for idErp: " + api.getIdErp()));
+                    [e] updateApiToEntity-weakRef-uuid
+                        [v]             } else if (api.isUuidDefined()) {
+                        [v]                 entity = repository.findByUuid(api.getUuid()).orElseThrow(() -> new NotFoundException("No entity {{ @name }} found for uuid: " + api.getUuid()));
+                    [e] updateApiToEntity-weakRef-SK
+                        [v]             } else if (api.isSecondaryKeyDefined()) {
+                        [v]                 Example<{{ @name }}Entity> sk = Example.of({{ @name }}Entity.builderOf()
+                        [v]                     .withModel(api)
+                        [v]                     .build()
+                        [v]                 );
+                        [y]                 entity = repository.findOne(sk).orElseThrow(() -> new NotFoundException("No estado found for SK: "
+                    [e] updateApiToEntity-weakRef-SK-attribute
+                        [y]  + " {{ @name }}=" + api.get{{ mi:first-upper(@name) }}()
+                    [e] updateApiToEntity-weakRef-SK-end
+                        [v] ));
+                    [e] updateApiToEntity-weakRef-close
+                        [v]             }
+                        [v]         } else {
+                        [v]             {{ @name }}EntityBuilder {{ mi:first-lower(@name) }}Builder = {{ @name }}Entity.builderOf();
+                        [v] 
+                        [v]             {{ mi:first-lower(@name) }}Builder.version = api.getVersion();
+                    [e] updateApiToEntity-close
+                        [v] 
+                        [v]             this.setEntityDefaultValues(entity);
+                        [v]         }
+                        [v] 
+                        [v]         return entity;
+                        [v]     }
+                    [g] set
+                        [e] updateApiToEntity-setDirectToField
+                            [v]             entity.set{{ mi:first-upper(@name) }}( api.get{{ mi:first-upper(@name) }}() );
+                        [e] updateApiToEntity-setOneToOne
+                            [v] 
+                            [v]             if ( api.get{{ mi:first-upper(@name) }}() != null ) {
+                            [v]                 if ( entity.get{{ mi:first-upper(@name) }}() == null ) {
+                            [v]                     entity.set{{ mi:first-upper(@name) }}( new {{ mi:first-upper($typeName) }}Entity() );
+                            [v]                 }
+                            [v]                 entity.set{{ mi:first-upper(@name) }}({{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.updateApiToEntity( api.get{{ mi:first-upper(@name) }}(), entity.get{{ mi:first-upper(@name) }}()));
+                            [v]             } else {
+                            [v]                 entity.set{{ mi:first-upper(@name) }}( null );
+                            [v]             }
+                        [e] updateApiToEntity-setManyToOne
+                            [v] 
+                            [v]             if ( api.get{{ mi:first-upper(@name) }}() != null ) {
+                            [v]                 if ( entity.get{{ mi:first-upper(@name) }}() == null ) {
+                            [v]                     entity.set{{ mi:first-upper(@name) }}( new {{ mi:first-upper($typeName) }}Entity() );
+                            [v]                 }
+                            [v]                 entity.set{{ mi:first-upper(@name) }}({{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.updateApiToEntity( api.get{{ mi:first-upper(@name) }}(), entity.get{{ mi:first-upper(@name) }}()));
+                            [v]             } else {
+                            [v]                 entity.set{{ mi:first-upper(@name) }}( null );
+                            [v]             }
+                        [e] updateApiToEntity-setComposite
+                            [v] 
+                            [v]             if ( api.get{{ mi:first-upper(@name) }}() != null ) {
+                            [v]                 if ( entity.get{{ mi:first-upper(@name) }}() == null ) {
+                            [v]                     entity.set{{ mi:first-upper(@name) }}( new {{ mi:first-upper($typeName) }}Entity() );
+                            [v]                 }
+                            [v]                 entity.set{{ mi:first-upper(@name) }}({{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.updateApiToEntity( api.get{{ mi:first-upper(@name) }}(), entity.get{{ mi:first-upper(@name) }}()));
+                            [v]             } else {
+                            [v]                 entity.set{{ mi:first-upper(@name) }}( null );
+                            [v]             }
+                        [e] updateApiToEntity-setOneToMany
+                            [v] 
+                            [v]             if ( entity.get{{ mi:first-upper(@name) }}() != null ) {
+                            [v]                 List<{{ $typeName }}Entity> list = {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.apiListToEntityList( api.get{{ mi:first-upper(@name) }}() );
+                            [v]                 if ( list != null ) {
+                            [v]                     entity.get{{ mi:first-upper(@name) }}().clear();
+                            [v]                     entity.get{{ mi:first-upper(@name) }}().addAll( list );
+                            [v]                 } else {
+                            [v]                     entity.set{{ mi:first-upper(@name) }}( null );
+                            [v]                 }
+                            [v]             } else {
+                            [v]                 List<{{ $typeName }}Entity> list = {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.apiListToEntityList( api.get{{ mi:first-upper(@name) }}() );
+                            [v]                 if ( list != null ) {
+                            [v]                     entity.set{{ mi:first-upper(@name) }}( list );
+                            [v]                 }
+                            [v]             }
+                [g] patchApiToEntity
+                    [e] patchApiToEntity-start
+                        [v] 
+                        //
+                            [v]     @Transactional(propagation = Propagation.REQUIRED, transactionManager = "{{ $transactionManager }}TransactionManager")
+                        [v]     public {{ @name }}Entity patchApiToEntity({{ @name }} api, {{ @name }}Entity entity) {
+                        [v]         if ( api == null ) {
+                        [v]             return null;
+                        [v]         }
+                        [v] 
+                    [e] patchApiToEntity-close
+                        [v] 
+                        [v]         return entity;
+                        [v]     }
+                    [g] set
+                        [e] patchApiToEntity-setDirectToField
+                            [v]         if (api.get{{ mi:first-upper(@name) }}() != null) entity.set{{ mi:first-upper(@name) }}( api.get{{ mi:first-upper(@name) }}() ); 
+                        [e] patchApiToEntity-setOneToOne
+                            [v]
+                            [v]         if ( api.get{{ mi:first-upper(@name) }}() != null ) {
+                            [v]             if ( entity.get{{ mi:first-upper(@name) }}() == null ) {
+                            [v]                 entity.set{{ mi:first-upper(@name) }}( new {{ mi:first-upper($typeName) }}Entity() );
+                            [v]             }
+                            [v]             entity.set{{ mi:first-upper(@name) }}({{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.updateApiToEntity( api.get{{ mi:first-upper(@name) }}(), entity.get{{ mi:first-upper(@name) }}()));
+                            [v]         }
+                        [e] patchApiToEntity-setManyToOne
+                            [v]
+                            [v]         if ( api.get{{ mi:first-upper(@name) }}() != null ) {
+                            [v]             if ( entity.get{{ mi:first-upper(@name) }}() == null ) {
+                            [v]                 entity.set{{ mi:first-upper(@name) }}( new {{ mi:first-upper($typeName) }}Entity() );
+                            [v]             }
+                            [v]             entity.set{{ mi:first-upper(@name) }}({{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.updateApiToEntity( api.get{{ mi:first-upper(@name) }}(), entity.get{{ mi:first-upper(@name) }}()));
+                            [v]         }
+                        [e] patchApiToEntity-setOneToMany
+                            [v] 
+                            [v]             if ( entity.get{{ mi:first-upper(@name) }}() != null ) {
+                            [v]                 List<{{ $typeName }}Entity> list = {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.apiListToEntityList( api.get{{ mi:first-upper(@name) }}() );
+                            [v]                 if ( list != null ) {
+                            [v]                     entity.get{{ mi:first-upper(@name) }}().clear();
+                            [v]                     entity.get{{ mi:first-upper(@name) }}().addAll( list );
+                            [v]                 }
+                            [v]             } else {
+                            [v]                 List<{{ $typeName }}Entity> list = {{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.apiListToEntityList( api.get{{ mi:first-upper(@name) }}() );
+                            [v]                 if ( list != null ) {
+                            [v]                     entity.set{{ mi:first-upper(@name) }}( list );
+                            [v]                 }
+                            [v]             }
+                        [e] patchApiToEntity-setComposite
+                            [v] 
+                            [v]         if ( api.get{{ mi:first-upper(@name) }}() != null ) {
+                            [v]             if ( entity.get{{ mi:first-upper(@name) }}() == null ) {
+                            [v]                 entity.set{{ mi:first-upper(@name) }}( new {{ mi:first-upper($typeName) }}Entity() );
+                            [v]             }
+                            [v]             entity.set{{ mi:first-upper(@name) }}({{ mi:if-else($typeName = $modelName,'this', concat(mi:first-lower($typeName),'Mapper')) }}.updateApiToEntity( api.get{{ mi:first-upper(@name) }}(), entity.get{{ mi:first-upper(@name) }}()));
+                            [v]         }
+                [g] setEntityDefaultValues
+                    [e] setEntityDefaultValues-start
+                        [v] 
+                        [v]     public {{ @name }}Entity setEntityDefaultValues({{ @name }}Entity entity) {
+                        [v]         if ( entity == null ) {
+                        [v]             return null;
+                        [v]         }
+                        [v] 
+                    [e] setEntityDefaultValues-end
+                        [v] 
+                        [v]         return entity;
+                        [v]     }
+                    [g] set
+                        [e] setEntityDefaultValues-set-string
+                            [v]         if (entity.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             entity.set{{ mi:first-upper(@name) }}({{ concat('"',properties/defaultValue/value,'"') }});
+                            [v]         }
+                        [e] setEntityDefaultValues-set-integer
+                            [v]         if (entity.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             entity.set{{ mi:first-upper(@name) }}({{ functx:substring-before-if-contains(properties/defaultValue/value,'.')}});
+                            [v]         }
+                        [e] setEntityDefaultValues-set-long
+                            [v]         if (entity.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             entity.set{{ mi:first-upper(@name) }}({{ functx:substring-before-if-contains(properties/defaultValue/value,'.') }}l);
+                            [v]         }
+                        [e] setEntityDefaultValues-set-double
+                            [v]         if (entity.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             entity.set{{ mi:first-upper(@name) }}({{ properties/defaultValue/value }});
+                            [v]         }
+                        [e] setEntityDefaultValues-set-boolean
+                            [v]         if (entity.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             entity.set{{ mi:first-upper(@name) }}({{ properties/defaultValue/value }});
+                            [v]         }
+                        [e] setEntityDefaultValues-set-dateNull
+                            [v]         if (entity.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             entity.set{{ mi:first-upper(@name) }}({{ properties/defaultValue/value }});
+                            [v]         }
+                        [e] setEntityDefaultValues-set-datetime-yyyyMMdd
+                            [v]         if (entity.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             entity.set{{ mi:first-upper(@name) }}(
+                            [v]                 LocalDate.parse("{{ properties/defaultValue/value }}")
+                            [v]             );
+                            [v]         }
+                        [e] setEntityDefaultValues-set-datetime-yyyyMMddHHmmSS
+                            [v]         if (entity.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             entity.set{{ mi:first-upper(@name) }}(LocalDateTime.parse(
+                            [v]                 "{{ properties/defaultValue/value }}",
+                            [v]                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                            [v]             ));
+                            [v]         }
+                        [e] setEntityDefaultValues-set-datetime-yyyyMMddHHmmSSsss
+                            [v]         if (entity.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             entity.set{{ mi:first-upper(@name) }}(LocalDateTime.parse(
+                            [v]                 "{{ properties/defaultValue/value }}",
+                            [v]                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+                            [v]             ));
+                            [v]         }
+                [g] setApiDefaultValues
+                    [e] setApiDefaultValues-start
+                        [v] 
+                        [v]     public {{ @name }} setApiDefaultValues({{ @name }} api) {
+                        [v]         if ( api == null ) {
+                        [v]             return null;
+                        [v]         }
+                        [v] 
+                    [e] setApiDefaultValues-end
+                        [v] 
+                        [v]         return api;
+                        [v]     }
+                    [g] set
+                        [e] setApiDefaultValues-set-string
+                            [v]         if (api.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             api.set{{ mi:first-upper(@name) }}({{ concat('"',properties/defaultValue/value,'"') }});
+                            [v]         }
+                        [e] setApiDefaultValues-set-integer
+                            [v]         if (api.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             api.set{{ mi:first-upper(@name) }}({{ functx:substring-before-if-contains(properties/defaultValue/value,'.') }});
+                            [v]         }
+                        [e] setApiDefaultValues-set-long
+                            [v]         if (api.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             api.set{{ mi:first-upper(@name) }}({{ functx:substring-before-if-contains(properties/defaultValue/value,'.')  }}l);
+                            [v]         }
+                        [e] setApiDefaultValues-set-double
+                            [v]         if (api.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             api.set{{ mi:first-upper(@name) }}({{ properties/defaultValue/value }});
+                            [v]         }
+                        [e] setApiDefaultValues-set-boolean
+                            [v]         if (api.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             api.set{{ mi:first-upper(@name) }}({{ properties/defaultValue/value }});
+                            [v]         }
+                        [e] setApiDefaultValues-set-dateNull
+                            [v]         if (api.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             api.set{{ mi:first-upper(@name) }}({{ properties/defaultValue/value }});
+                            [v]         }
+                        [e] setApiDefaultValues-set-datetime-yyyyMMdd
+                            [v]         if (api.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             api.set{{ mi:first-upper(@name) }}(
+                            [v]                 LocalDate.parse("{{ properties/defaultValue/value }}")
+                            [v]             );
+                            [v]         }
+                        [e] setApiDefaultValues-set-datetime-yyyyMMddHHmmSS
+                            [v]         if (api.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             api.set{{ mi:first-upper(@name) }}(LocalDateTime.parse(
+                            [v]                 "{{ properties/defaultValue/value }}",
+                            [v]                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                            [v]             ));
+                            [v]         }
+                        [e] setApiDefaultValues-set-datetime-yyyyMMddHHmmSSsss
+                            [v]         if (api.get{{ mi:first-upper(@name) }}() == null) {
+                            [v]             api.set{{ mi:first-upper(@name) }}(LocalDateTime.parse(
+                            [v]                 "{{ properties/defaultValue/value }}",
+                            [v]                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+                            [v]             ));
+                            [v]         }
+        [g] generic
+            [e] naoImprimeNada
+                [y] 
+        [g] @TODO
+            [e] declaraTODO
+                [v] //@TODO _ tem que implementar: {{ $nomeTODO }}
+                [v] //Caminho xpath: {{ functx:path-to-node-with-pos(current()) }}
+            [e] declara-labelEstruturaXpath
+            [e] start-labelEstruturaXpath
+                [y] //Estrutura xpath: .[
+            [e] end-labelEstruturaXpath
+                [v] ]
+                [v] 
+            [e] declara-nomeDoElemento
+                [y] name()='{{ name() }}'
+            [g] Estrutura xpath
+                [e] declara-barra
+                    [y] /
+                [e] declara-contadorElementosFilhos
+                    [y] count(*)={{ count(child::*) }}
+                [e] declara-andEspacoEmBranco
+                    [y]  and 
+                [e] declara-clausulaPositionName
+                    [y] child::*[position()={{ position() }} and name()='{{ name() }}']
+                [e] start-clausulaContZeroText
+                    [y] /.[count(*)=0 and 
+                [e] end-clausulaContZeroText
+                    [y] ]
+                [e] declara-clausulaText
+                    [y] text()='{{ text() }}'
+                [e] declara-clausulaTextName
+                    [y] text()
+                [e] declara-prefixoName
+                    [y] {{ $prefixoNome }}
+                [e] declara-clausulaNotTextName
+                    [y] not(text())
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [g] package e imports
+                [e] apply-templates
+                    [e] select
+                        [v] .
+                    [e] mode
+                        [v] imports
+            [g] inicio
+                [e] write-pattern
+                    [v] class-start
+                [e] apply-templates
+                    [e] select
+                        [v] distinct-values(attributes/attribute[@mode!='directToField']/@type)
+                    [e] mode
+                        [v] declareMappers
+            //
+                Quarkus não precisa de constructor
+                resolver melhor com Inject
+                [g] constructor
+                    [e] write-pattern
+                        [v] constructor-start
+                    [e] apply-templates
+                        [e] select
+                            [v] distinct-values(attributes/attribute[@mode!='directToField']/@type)
+                        [e] mode
+                            [v] constructorMappersParams
+                    [e] write-pattern
+                        [v] constructor-body-start
+                    [e] apply-templates
+                        [e] select
+                            [v] distinct-values(attributes/attribute[@mode!='directToField']/@type)
+                        [e] mode
+                            [v] constructorMappersInit
+                    [e] write-pattern
+                        [v] constructor-close
+            [g] corpo
+                [e] apply-templates
+                    [e] select
+                        [v] .
+                    [e] mode
+                        [v] methods
+            [g] fim
+                [e] write-pattern
+                    [v] class-close
+    [e] templates
+        [g] imports
+            [e] mode
+                [v] imports
+                [e] template
+                    [e] match
+                        [v] class
+                    [e] body
+                        [e] write-pattern
+                            [v] package
+                        [e] write-pattern
+                            [v] importsPadrao
+                        [e] apply-templates
+                            [e] select
+                                [v] distinct-values(attributes/attribute[@mode!='directToField']/@type)
+                            [e] mode
+                                [v] importAtributo
+                        [e] if
+                            [v] attributes/attribute[@type = $mapNativeTypes/Date/value and matches(properties/defaultValue/value, '\d{4}-\d{2}-\d{2}') and string-length(properties/defaultValue/value)=10 and properties/defaultValue/value/text() != '0000-00-00']
+                            [e] then
+                                [e] write-pattern
+                                    [v] importAttribute-LocalDate
+                        [e] if
+                            [v] attributes/attribute[@type = $mapNativeTypes/DateTime/value and ((matches(properties/defaultValue/value, '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}') and string-length(properties/defaultValue/value)=19 and properties/defaultValue/value/text() != '0000-00-00 00:00:00') or (matches(properties/defaultValue/value, '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}') and string-length(properties/defaultValue/value)=23 and properties/defaultValue/value/text() != '0000-00-00 00:00:00.000'))]
+                            [e] then
+                                [e] write-pattern
+                                    [v] importAttribute-LocalDateTime
+                                [e] write-pattern
+                                    [v] importAttribute-DateTimeFormatter
+            [e] mode
+                [v] importAtributo
+                [e] template
+                    [e] match
+                        [v] .
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] valorAtual
+                                [e] expr
+                                    [v] .
+                            [e] var
+                                [v] nameAttribute
+                                [e] expr
+                                    [v] functx:substring-after-last($valorAtual, '.')
+                            [e] var
+                                [v] packageAttribute
+                                [e] expr
+                                    [v] mi:if-else(contains($valorAtual, '.'), substring-before($valorAtual, $nameAttribute), concat(substring-after($classes/class[@name = $nameAttribute][1]/@package, '.domain.'), '.'))
+                        [e] write-pattern
+                            [v] importAttribute
+                        [e] if
+                            [v] not(ends-with($package, functx:substring-before-last($packageAttribute, '.')))
+                            [e] then
+                                [e] write-pattern
+                                    [v] importAttribute-mapper
+                        [e] write-pattern
+                            [v] importAttribute-entity
+        [g] declareMappers
+            [e] mode
+                [v] declareMappers
+                [e] template
+                    [e] match
+                        [v] .
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] mappedType
+                                [e] expr
+                                    [v] .
+                            [e] var
+                                [v] typeClassName
+                                [e] expr
+                                    [v] functx:substring-after-last($mappedType, '.')
+                            [e] var
+                                [v] typePackagePrefix
+                                [e] expr
+                                    [v] substring-before($mappedType, $typeClassName)
+                        [e] if
+                            [v] $typeClassName != $modelName
+                            [e] then
+                                [e] write-pattern
+                                    [v] attribute-mapper
+        [g] constructor
+            [e] mode
+                [v] constructorMappersParams
+                [e] template
+                    [e] match
+                        [v] .
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] mappedType
+                                [e] expr
+                                    [v] .
+                            [e] var
+                                [v] typeClassName
+                                [e] expr
+                                    [v] functx:substring-after-last($mappedType, '.')
+                            [e] var
+                                [v] typePackagePrefix
+                                [e] expr
+                                    [v] substring-before($mappedType, $typeClassName)
+                        [e] if
+                            [v] $typeClassName != $modelName
+                            [e] then
+                                [e] write-pattern
+                                    [v] constructor-mapper-param
+            [e] mode
+                [v] constructorMappersInit
+                [e] template
+                    [e] match
+                        [v] .
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] mappedType
+                                [e] expr
+                                    [v] .
+                            [e] var
+                                [v] typeClassName
+                                [e] expr
+                                    [v] functx:substring-after-last($mappedType, '.')
+                            [e] var
+                                [v] typePackagePrefix
+                                [e] expr
+                                    [v] substring-before($mappedType, $typeClassName)
+                        [e] if
+                            [v] $typeClassName != $modelName
+                            [e] then
+                                [e] write-pattern
+                                    [v] constructor-mapper-init
+        [g] methods
+            [e] mode
+                [v] methods
+                [e] template
+                    [e] match
+                        [v] class
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] inicialClasseSequencia
+                                [e] expr
+                                    [v] (concat(@package, '.', @name))
+                            [e] var
+                                [v] inicialProcessadoClasseSequencia
+                                [e] expr
+                                    [v] ('NONE')
+                        [e] apply-templates
+                            [e] select
+                                [v] .
+                            [e] mode
+                                [v] entityToApi
+                        [e] apply-templates
+                            [e] select
+                                [v] .
+                            [e] mode
+                                [v] apiToEntity
+                        [e] write-pattern
+                            [v] entityListToApiList
+                        [e] write-pattern
+                            [v] apiListToEntityList
+                        [e] apply-templates
+                            [e] select
+                                [v] .
+                            [e] mode
+                                [v] updateEntityToApi
+                        [e] apply-templates
+                            [e] select
+                                [v] .
+                            [e] mode
+                                [v] updateApiToEntity
+                        [e] apply-templates
+                            [e] select
+                                [v] .
+                            [e] mode
+                                [v] patchApiToEntity
+                        [e] apply-templates
+                            [e] select
+                                [v] .
+                            [e] mode
+                                [v] setEntityDefaultValues
+                        [e] apply-templates
+                            [e] select
+                                [v] .
+                            [e] mode
+                                [v] setApiDefaultValues
+            [g] setApiDefaultValues
+                [e] mode
+                    [v] setApiDefaultValues
+                    [e] template
+                        [e] match
+                            [v] class
+                        [e] body
+                            [g] inicio
+                                [e] write-pattern
+                                    [v] setApiDefaultValues-start
+                            [g] corpo
+                                [e] apply-templates
+                                    [e] select
+                                        [v] attributes/attribute[properties/defaultValue/value and @mode='directToField']
+                                    [e] mode
+                                        [v] setApiDefaultValues-set
+                            [g] fim
+                                [e] write-pattern
+                                    [v] setApiDefaultValues-end
+                [e] mode
+                    [v] setApiDefaultValues-set
+                    [e] template
+                        [e] match
+                            [v] attribute
+                        [e] body
+                            [e] if
+                                [v] @mode = 'directToField'
+                                [e] then
+                                    [e] if
+                                        [v] @type = $mapNativeTypes/String/value
+                                        [e] then
+                                            [e] write-pattern
+                                                [v] setApiDefaultValues-set-string
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/Integer/value
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setApiDefaultValues-set-integer
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/Long/value
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setApiDefaultValues-set-long
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/Double/value 
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setApiDefaultValues-set-double
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/Boolean/value
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setApiDefaultValues-set-boolean
+                                        [e] else-if
+                                            [v] .[(@type = $mapNativeTypes/Date/value or @type = $mapNativeTypes/DateTime/value) and properties/defaultValue/value[text() = '0000-00-00' or text() = '0000-00-00 00:00:00' or text() = '0000-00-00 00:00:00.000']]
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] naoImprimeNada
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/Date/value and properties/defaultValue/value/text() = 'null'
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setApiDefaultValues-set-dateNull
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/Date/value and matches(properties/defaultValue/value, '\d{4}-\d{2}-\d{2}') and string-length(properties/defaultValue/value)=10
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setApiDefaultValues-set-datetime-yyyyMMdd
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/DateTime/value and matches(properties/defaultValue/value, '(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})') and string-length(properties/defaultValue/value)=19
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setApiDefaultValues-set-datetime-yyyyMMddHHmmSS
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/DateTime/value and matches(properties/defaultValue/value, '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}') and string-length(properties/defaultValue/value)=23
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setApiDefaultValues-set-datetime-yyyyMMddHHmmSSsss
+                                        [e] else
+                                            [e] apply-templates
+                                                [e] select
+                                                    [v] .
+                                                [e] parameters
+                                                    [e] nomeTODO
+                                                        [v] ASSIGN-SET-API-DEFAULT-VALUES-SET-directToField
+                                                [e] mode
+                                                    [v] assignTODO
+                                [e] else
+                                    [e] apply-templates
+                                        [e] select
+                                            [v] .
+                                        [e] parameters
+                                            [e] nomeTODO
+                                                [v] ASSIGN-SET-API-DEFAULT-VALUES-SET
+                                        [e] mode
+                                            [v] assignTODO
+            [g] setEntityDefaultValues
+                [e] mode
+                    [v] setEntityDefaultValues
+                    [e] template
+                        [e] match
+                            [v] class
+                        [e] body
+                            [g] inicio
+                                [e] write-pattern
+                                    [v] setEntityDefaultValues-start
+                            [g] corpo
+                                [e] apply-templates
+                                    [e] select
+                                        [v] attributes/attribute[properties/defaultValue/value and @mode='directToField']
+                                    [e] mode
+                                        [v] setEntityDefaultValues-set
+                            [g] fim
+                                [e] write-pattern
+                                    [v] setEntityDefaultValues-end
+                [e] mode
+                    [v] setEntityDefaultValues-set
+                    [e] template
+                        [e] match
+                            [v] attribute
+                        [e] body
+                            [e] if
+                                [v] @mode = 'directToField'
+                                [e] then
+                                    [e] if
+                                        [v] @type = $mapNativeTypes/String/value
+                                        [e] then
+                                            [e] write-pattern
+                                                [v] setEntityDefaultValues-set-string
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/Integer/value
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setEntityDefaultValues-set-integer
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/Long/value
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setEntityDefaultValues-set-long
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/Double/value 
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setEntityDefaultValues-set-double
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/Boolean/value
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setEntityDefaultValues-set-boolean
+                                        [e] else-if
+                                            [v] .[(@type = $mapNativeTypes/Date/value or @type = $mapNativeTypes/DateTime/value) and properties/defaultValue/value[text() = '0000-00-00' or text() = '0000-00-00 00:00:00' or text() = '0000-00-00 00:00:00.000']]
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] naoImprimeNada
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/Date/value and properties/defaultValue/value/text()='null'
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setEntityDefaultValues-set-dateNull
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/Date/value and matches(properties/defaultValue/value, '\d{4}-\d{2}-\d{2}') and string-length(properties/defaultValue/value)=10
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setEntityDefaultValues-set-datetime-yyyyMMdd
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/DateTime/value and matches(properties/defaultValue/value, '(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})') and string-length(properties/defaultValue/value)=19
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setEntityDefaultValues-set-datetime-yyyyMMddHHmmSS
+                                        [e] else-if
+                                            [v] @type = $mapNativeTypes/DateTime/value and matches(properties/defaultValue/value, '\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}') and string-length(properties/defaultValue/value)=23
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] setEntityDefaultValues-set-datetime-yyyyMMddHHmmSSsss
+                                        [e] else
+                                            [e] apply-templates
+                                                [e] select
+                                                    [v] .
+                                                [e] parameters
+                                                    [e] nomeTODO
+                                                        [v] ASSIGN-SET-ENTITY-DEFAULT-VALUES-SET-directToField
+                                                [e] mode
+                                                    [v] assignTODO
+                                [e] else
+                                    [e] apply-templates
+                                        [e] select
+                                            [v] .
+                                        [e] parameters
+                                            [e] nomeTODO
+                                                [v] ASSIGN-SET-ENTITY-DEFAULT-VALUES-SET
+                                        [e] mode
+                                            [v] assignTODO
+            [g] updateEntityToApi
+                [e] mode
+                    [v] updateEntityToApi
+                    [e] template
+                        [e] match
+                            [v] class
+                        [e] body
+                            [e] vars
+                                [e] var
+                                    [v] className
+                                    [e] expr
+                                        [v] mi:first-lower(@name)
+                            [g] inicio
+                                [e] write-pattern
+                                    [v] updateEntityToApi-start
+                            [g] corpo
+                                [e] apply-templates
+                                    [e] select
+                                        [v] attributes/attribute[not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                                    [e] parameters
+                                        [e] className
+                                            [e] expr
+                                                [v] $className
+                                    [e] mode
+                                        [v] updateEntityToApi-set
+                            [g] fim
+                                [e] write-pattern
+                                    [v] updateEntityToApi-close
+                [e] mode
+                    [v] updateEntityToApi-set
+                    [e] template
+                        [e] match
+                            [v] attribute
+                        [e] parameters
+                            [e] className
+                                [v] NOT_DEFINED
+                        [e] body
+                            [e] if
+                                [v] @mode = 'directToField'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] updateEntityToApi-setDirectToField
+                                [e] else-if
+                                    [v] @mode = 'oneToOne'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] updateEntityToApi-setOneToOne
+                                [e] else-if
+                                    [v] @mode = 'manyToOne'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] updateEntityToApi-setManyToOne
+                                [e] else-if
+                                    [v] @mode = 'oneToMany'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] updateEntityToApi-setOneToMany
+                                [e] else-if
+                                    [v] @mode = 'composite'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] updateEntityToApi-setComposite
+                                [e] else
+                                    [e] apply-templates
+                                        [e] select
+                                            [v] .
+                                        [e] parameters
+                                            [e] nomeTODO
+                                                [v] UPDATE-ENTITY-TO-API-SET
+                                        [e] mode
+                                            [v] assignTODO
+            [g] entityToApi
+                [e] mode
+                    [v] entityToApi
+                    [e] template
+                        [e] match
+                            [v] class
+                        [e] body
+                            [e] vars
+                                [e] var
+                                    [v] className
+                                    [e] expr
+                                        [v] mi:first-lower(@name)
+                            [g] inicio
+                                [e] write-pattern
+                                    [v] entityToApi-start
+                            [g] corpo
+                                [e] apply-templates
+                                    [e] select
+                                        [v] attributes/attribute[not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                                    [e] parameters
+                                        [e] className
+                                            [e] expr
+                                                [v] $className
+                                    [e] mode
+                                        [v] entityToApi-Set
+                            [g] fim
+                                [e] write-pattern
+                                    [v] entityToApi-close
+                [e] mode
+                    [v] entityToApi-Set
+                    [e] template
+                        [e] match
+                            [v] attribute
+                        [e] parameters
+                            [e] className
+                                [v] NOT_DEFINED
+                        [e] body
+                            [e] if
+                                [v] @mode = 'directToField'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] entityToApi-SetDirectToField
+                                [e] else-if
+                                    [v] @mode = 'oneToOne'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] entityToApi-SetOneToOne
+                                [e] else-if
+                                    [v] @mode = 'manyToOne'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] entityToApi-SetManyToOne
+                                [e] else-if
+                                    [v] @mode = 'composite'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] entityToApi-SetComposite
+                                [e] else-if
+                                    [v] @mode = 'oneToMany'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] entityToApi-SetOneToMany
+                                [e] else
+                                    [e] apply-templates
+                                        [e] select
+                                            [v] .
+                                        [e] parameters
+                                            [e] nomeTODO
+                                                [v] ASSIGN-ENTITY-TO-API-SET
+                                        [e] mode
+                                            [v] assignTODO
+            [g] apiToEntity
+                [e] mode
+                    [v] apiToEntity
+                    [e] template
+                        [e] match
+                            [v] class
+                        [e] body
+                            [e] vars
+                                [e] var
+                                    [v] className
+                                    [e] expr
+                                        [v] mi:first-lower(@name)
+                                [e] var
+                                    [v] SK
+                                    [e] expr
+                                        [v] properties/SK
+                            [g] inicio
+                                [e] write-pattern
+                                    [v] apiToEntity-start
+                                [e] write-pattern
+                                    [v] apiToEntity-weakRef-start
+                                [e] if
+                                    [v] attributes/attribute[@name = 'idErp']
+                                    [e] then
+                                        [e] write-pattern
+                                            [v] apiToEntity-weakRef-idErp
+                                [e] if
+                                    [v] attributes/attribute[@name = 'uuid']
+                                    [e] then
+                                        [e] write-pattern
+                                            [v] apiToEntity-weakRef-uuid
+                                [e] if
+                                    [v] exists($SK)
+                                    [e] then
+                                        [g] weakRef-SK
+                                            [e] write-pattern
+                                                [v] apiToEntity-weakRef-SK
+                                            [e] apply-templates
+                                                [e] select
+                                                    [v] attributes/attribute[@name!='idErp' and @name!='uuid' and functx:is-value-in-sequence(@name, $SK/value)]
+                                                [e] mode
+                                                    [v] apiToEntity-weakRef-SK-attribute
+                                            [e] write-pattern
+                                                [v] apiToEntity-weakRef-SK-end
+                                [e] write-pattern
+                                    [v] apiToEntity-weakRef-close
+                            [g] corpo
+                                [e] apply-templates
+                                    [e] select
+                                        [v] attributes/attribute[not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                                    [e] parameters
+                                        [e] className
+                                            [e] expr
+                                                [v] $className
+                                    [e] mode
+                                        [v] apiToEntity-get
+                            [g] fim
+                                [e] write-pattern
+                                    [v] apiToEntity-close
+                [e] mode
+                    [v] apiToEntity-get
+                    [e] template
+                        [e] match
+                            [v] attribute
+                        [e] parameters
+                            [e] className
+                                [v] NOT_DEFINED
+                        [e] body
+                            [e] if
+                                [v] @mode = 'directToField'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] apiToEntity-getDirectToField
+                                [e] else-if
+                                    [v] @mode = 'oneToOne'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] apiToEntity-getOneToOne
+                                [e] else-if
+                                    [v] @mode = 'manyToOne'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] apiToEntity-getManyToOne
+                                [e] else-if
+                                    [v] @mode = 'composite'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] apiToEntity-getComposite
+                                [e] else-if
+                                    [v] @mode = 'oneToMany'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] apiToEntity-getOneToMany
+                                [e] else
+                                    [e] apply-templates
+                                        [e] select
+                                            [v] .
+                                        [e] parameters
+                                            [e] nomeTODO
+                                                [v] ASSIGN-API-TO-ENTITY-GET
+                                        [e] mode
+                                            [v] assignTODO
+                [e] mode
+                    [v] apiToEntity-weakRef-SK-attribute
+                    [e] template
+                        [e] match
+                            [v] attribute
+                        [e] body
+                            [e] write-pattern
+                                [v] apiToEntity-weakRef-SK-attribute
+            [g] updateApiToEntity
+                [e] mode
+                    [v] updateApiToEntity
+                    [e] template
+                        [e] match
+                            [v] class
+                        [e] body
+                            [e] vars
+                                [e] var
+                                    [v] className
+                                    [e] expr
+                                        [v] mi:first-lower(@name)
+                                [e] var
+                                    [v] SK
+                                    [e] expr
+                                        [v] properties/SK
+                            [g] inicio
+                                [e] write-pattern
+                                    [v] updateApiToEntity-start
+                                [e] write-pattern
+                                    [v] updateApiToEntity-weakRef-start
+                                [e] if
+                                    [v] attributes/attribute[@name = 'idErp']
+                                    [e] then
+                                        [e] write-pattern
+                                            [v] updateApiToEntity-weakRef-idErp
+                                [e] if
+                                    [v] attributes/attribute[@name = 'uuid']
+                                    [e] then
+                                        [e] write-pattern
+                                            [v] updateApiToEntity-weakRef-uuid
+                                [e] if
+                                    [v] exists($SK)
+                                    [e] then
+                                        [g] weakRef-SK
+                                            [e] write-pattern
+                                                [v] updateApiToEntity-weakRef-SK
+                                            [e] apply-templates
+                                                [e] select
+                                                    [v] attributes/attribute[@name!='idErp' and @name!='uuid' and functx:is-value-in-sequence(@name, $SK/value)]
+                                                [e] mode
+                                                    [v] updateApiToEntity-weakRef-SK-attribute
+                                            [e] write-pattern
+                                                [v] updateApiToEntity-weakRef-SK-end
+                                [e] write-pattern
+                                    [v] updateApiToEntity-weakRef-close
+                            [g] corpo
+                                [e] apply-templates
+                                    [e] select
+                                        [v] attributes/attribute[not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                                    [e] parameters
+                                        [e] className
+                                            [e] expr
+                                                [v] $className
+                                    [e] mode
+                                        [v] updateApiToEntity-set
+                            [g] fim
+                                [e] write-pattern
+                                    [v] updateApiToEntity-close
+                [e] mode
+                    [v] updateApiToEntity-set
+                    [e] template
+                        [e] match
+                            [v] attribute
+                        [e] parameters
+                            [e] className
+                                [v] NOT_DEFINED
+                        [e] body
+                            [e] if
+                                [v] @mode = 'directToField'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] updateApiToEntity-setDirectToField
+                                [e] else-if
+                                    [v] @mode = 'oneToOne'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] updateApiToEntity-setOneToOne
+                                [e] else-if
+                                    [v] @mode = 'manyToOne'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] updateApiToEntity-setManyToOne
+                                [e] else-if
+                                    [v] @mode = 'composite'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] updateApiToEntity-setComposite
+                                [e] else-if
+                                    [v] @mode = 'oneToMany'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] updateApiToEntity-setOneToMany
+                                [e] else
+                                    [e] apply-templates
+                                        [e] select
+                                            [v] .
+                                        [e] parameters
+                                            [e] nomeTODO
+                                                [v] ASSIGN-UPDATE-API-TO-ENTITY-SET
+                                        [e] mode
+                                            [v] assignTODO
+            [g] patchApiToEntity
+                [e] mode
+                    [v] patchApiToEntity
+                    [e] template
+                        [e] match
+                            [v] class
+                        [e] body
+                            [e] vars
+                                [e] var
+                                    [v] className
+                                    [e] expr
+                                        [v] mi:first-lower(@name)
+                                [e] var
+                                    [v] SK
+                                    [e] expr
+                                        [v] properties/SK
+                            [g] inicio
+                                [e] write-pattern
+                                    [v] patchApiToEntity-start
+                            [g] corpo
+                                [e] apply-templates
+                                    [e] select
+                                        [v] attributes/attribute[not(exists(properties/storageOnly)) and (not(contains(@mode,'oneToMany')) or properties/apiRelation/value = 'EMBEDDED')]
+                                    [e] parameters
+                                        [e] className
+                                            [e] expr
+                                                [v] $className
+                                    [e] mode
+                                        [v] patchApiToEntity-set
+                            [g] fim
+                                [e] write-pattern
+                                    [v] patchApiToEntity-close
+                [e] mode
+                    [v] patchApiToEntity-set
+                    [e] template
+                        [e] match
+                            [v] attribute
+                        [e] parameters
+                            [e] className
+                                [v] NOT_DEFINED
+                        [e] body
+                            [e] if
+                                [v] @mode = 'directToField'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] patchApiToEntity-setDirectToField
+                                [e] else-if
+                                    [v] @mode = 'oneToOne'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] patchApiToEntity-setOneToOne
+                                [e] else-if
+                                    [v] @mode = 'manyToOne'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] patchApiToEntity-setManyToOne
+                                [e] else-if
+                                    [v] @mode = 'oneToMany'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] patchApiToEntity-setOneToMany
+                                [e] else-if
+                                    [v] @mode = 'composite'
+                                    [e] then
+                                        [e] vars
+                                            [e] var
+                                                [v] typeName
+                                                [e] expr
+                                                    [v] functx:substring-after-last(@type, '.')
+                                        [e] write-pattern
+                                            [v] patchApiToEntity-setComposite
+                                [e] else
+                                    [e] apply-templates
+                                        [e] select
+                                            [v] .
+                                        [e] parameters
+                                            [e] nomeTODO
+                                                [v] ASSIGN-UPDATE-API-TO-ENTITY-SET
+                                        [e] mode
+                                            [v] assignTODO
+        [g] @TODO
+            [e] mode
+                [v] assignTODO
+                [e] template
+                    [e] match
+                        [v] *
+                    [e] parameters
+                        [e] nomeTODO
+                            [v] NOT_DEFINED
+                    [e] body
+                        [e] write-pattern
+                            [v] declaraTODO
+                        [e] write-pattern
+                            [v] start-labelEstruturaXpath
+                        [e] write-pattern
+                            [v] declara-contadorElementosFilhos
+                        [e] write-pattern
+                            [v] declara-andEspacoEmBranco
+                        [e] write-pattern
+                            [v] declara-nomeDoElemento
+                        [e] if
+                            [v] count(./*)>0
+                            [e] then
+                                [e] write-pattern
+                                    [v] declara-andEspacoEmBranco
+                                [e] apply-templates
+                                    [e] select
+                                        [v] ./*
+                                    [e] parameters
+                                        [e] prefixoNome
+                                            [e] expr
+                                                [v] ''
+                                    [e] mode
+                                        [v] estruturaXpath
+                        [e] write-pattern
+                            [v] end-labelEstruturaXpath
+                        [e] write-pattern
+                            [v] quebraLinha
+            [e] mode
+                [v] estruturaXpath
+                [e] template
+                    [e] match
+                        [v] *
+                    [e] parameters
+                        [e] prefixoNome
+                            [v] NOT_DEFINED
+                    [e] body
+                        [e] if
+                            [v] $prefixoNome != ''
+                            [e] then
+                                [e] write-pattern
+                                    [v] declara-prefixoName
+                        [e] write-pattern
+                            [v] declara-clausulaPositionName
+                        [e] if
+                            [v] .[count(*)=0 and text()]
+                            [e] then
+                                [e] write-pattern
+                                    [v] start-clausulaContZeroText
+                                [e] write-pattern
+                                    [v] declara-clausulaText
+                                [e] write-pattern
+                                    [v] end-clausulaContZeroText
+                            [e] else-if
+                                [v] .[count(*)=0 and not(text())]
+                                [e] then
+                                    [e] write-pattern
+                                        [v] start-clausulaContZeroText
+                                    [e] write-pattern
+                                        [v] declara-clausulaNotTextName
+                                    [e] write-pattern
+                                        [v] end-clausulaContZeroText
+                            [e] else
+                                [e] vars
+                                    [e] var
+                                        [v] valueNameTratar
+                                        [e] expr
+                                            [v] name()
+                                    [e] var
+                                        [v] valueName
+                                        [e] expr
+                                            [v] concat(concat($prefixoNome, $valueNameTratar), '/')
+                                [e] write-pattern
+                                    [v] declara-barra
+                                [e] write-pattern
+                                    [v] declara-contadorElementosFilhos
+                                [e] write-pattern
+                                    [v] declara-andEspacoEmBranco
+                                [e] apply-templates
+                                    [e] select
+                                        [v] ./*
+                                    [e] parameters
+                                        [e] prefixoNome
+                                            [e] expr
+                                                [v] $valueName
+                                    [e] mode
+                                        [v] estruturaXpath
+                        [e] if
+                            [v] position() != last()
+                            [e] then
+                                [e] write-pattern
+                                    [v] declara-andEspacoEmBranco

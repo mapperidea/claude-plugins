@@ -1,0 +1,71 @@
+[b] Cliente
+    @
+        [e] title
+            [e] pt
+                [v] Cliente
+            [e] en
+                [v] Customer
+        [e] description
+            [e] pt
+                [v] Quem faz o pedido. Existe independentemente do Pedido — por isso o
+                  | Pedido o referencia com [r].
+            [e] en
+                [v] Who places the order. Exists independently of the Pedido — hence the
+                  | Pedido references it with [r].
+    [g] identificacao
+        [d] id: Texto(36)
+            @
+                [e] cn
+                    [v] id
+                [e] title
+                    [e] pt
+                        [v] Identificador
+                    [e] en
+                        [v] Identifier
+                [e] required
+                    [v] true
+        [d] nome: Texto(120)
+            @
+                [e] cn
+                    [v] nome
+                [e] title
+                    [e] pt
+                        [v] Nome
+                    [e] en
+                        [v] Name
+                [e] required
+                    [v] true
+                [e] searchable
+                    [v] true
+        [d] email: Texto(200)
+            @
+                [e] cn
+                    [v] email
+                [e] title
+                    [e] pt
+                        [v] E-mail
+                    [e] en
+                        [v] E-mail
+    [g] controle
+        [d] ativo: Boolean()
+            @
+                [e] cn
+                    [v] ativo
+                [e] title
+                    [e] pt
+                        [v] Ativo
+                    [e] en
+                        [v] Active
+                [e] defaultValue
+                    [v] true
+        [d] dataCriacao: DataHora()
+            @
+                [e] cn
+                    [v] data_criacao
+                [e] title
+                    [e] pt
+                        [v] Data de criação
+                    [e] en
+                        [v] Created at
+                [e] readOnly
+                    [v] true

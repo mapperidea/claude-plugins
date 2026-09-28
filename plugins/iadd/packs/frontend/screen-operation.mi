@@ -1,0 +1,119 @@
+[e] screenOperation
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] screenClass
+            [e] select
+                [v] /classes/class[@name = $modelName and @package = $package]
+    [e] fragments
+        [e] stepTitle
+            [v] mi:if-else(exists(properties/title/pt/value), string(properties/title/pt/value), string(value))
+        [e] opensPath
+            [v] concat('@/features/', translate(for $o in properties/opens/value return substring-after(/classes/class[@name = $o]/@package, 'com.exemplo.window.'), '.', '/'), '/', properties/opens/value)
+    [e] patterns
+        [e] header
+            [v] // GERADO por: mi generate <projeto> frontend screenOperation modelName={{ @name }} package={{ @package }}
+            [v] // Fonte: mapa de tela {{ @name }} (window.operation). NAO editar a mao — rode o gerador.
+            [v] import { toast } from "sonner"
+            [v] import { OperationFlow, type OperationStep } from "@/runtime/operation-flow"
+        [e] import-opens
+            [v] import { {{ properties/opens/value }}Form, type {{ properties/opens/value }}Values } from "{{ f#[opensPath] }}"
+        [e] import-custom
+            [v] import { {{ properties/custom/value }} } from "@/features/onboarding/{{ properties/custom/value }}"
+        [e] blankLine
+            [v]
+        [e] steps-start
+            [v] const steps: OperationStep[] = [
+        [e] steps-end
+            [v] ]
+        [e] step-opens
+            [v]   {
+            [v]     key: "{{ value }}",
+            [v]     title: "{{ f#[stepTitle] }}",
+            [v]     render: ({ master, patch, next }) => (
+            [v]       <{{ properties/opens/value }}Form
+            [v]         values={master.{{ value }} as {{ properties/opens/value }}Values | undefined}
+            [v]         onSubmit={(v) => { patch({ {{ value }}: v }); next() }\}
+            [v]       />
+            [v]     ),
+            [v]   },
+        [e] step-custom
+            [v]   {
+            [v]     key: "{{ value }}",
+            [v]     title: "{{ f#[stepTitle] }}",
+            [v]     render: (ctx) => <{{ properties/custom/value }} {...ctx} />,
+            [v]   },
+        [e] step-todo
+            [v]   // @TODO step "{{ value }}" sem opens nem custom — ignorado
+        [e] component
+            [v] export function {{ @name }}Screen() {
+            [v]   async function handleComplete() {
+            [v]     toast.success("Conta ativada! Onboarding concluído.")
+            [v]   }
+            [v]   return <OperationFlow steps={steps} onComplete={handleComplete} />
+            [v] }
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [e] write-pattern
+                [v] header
+            [e] apply-templates
+                [e] select
+                    [v] steps/step
+                [e] mode
+                    [v] stepImport
+            [e] write-pattern
+                [v] blankLine
+            [e] write-pattern
+                [v] steps-start
+            [e] apply-templates
+                [e] select
+                    [v] steps/step
+                [e] mode
+                    [v] stepEntry
+            [e] write-pattern
+                [v] steps-end
+            [e] write-pattern
+                [v] blankLine
+            [e] write-pattern
+                [v] component
+    [e] templates
+        [e] mode
+            [v] stepImport
+            [e] template
+                [e] match
+                    [v] step
+                [e] body
+                    [e] if
+                        [v] exists(properties/opens)
+                        [e] then
+                            [e] write-pattern
+                                [v] import-opens
+                        [e] else-if
+                            [v] exists(properties/custom)
+                            [e] then
+                                [e] write-pattern
+                                    [v] import-custom
+        [e] mode
+            [v] stepEntry
+            [e] template
+                [e] match
+                    [v] step
+                [e] body
+                    [e] if
+                        [v] exists(properties/opens)
+                        [e] then
+                            [e] write-pattern
+                                [v] step-opens
+                        [e] else-if
+                            [v] exists(properties/custom)
+                            [e] then
+                                [e] write-pattern
+                                    [v] step-custom
+                        [e] else
+                            [e] write-pattern
+                                [v] step-todo

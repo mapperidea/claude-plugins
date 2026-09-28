@@ -1,0 +1,69 @@
+[b] Fornecedor
+    @
+        [e] title
+            [e] pt
+                [v] Fornecedor
+            [e] en
+                [v] Supplier
+        [e] description
+            [e] pt
+                [v] Quem fornece o produto de um item. Referenciado pelo ItemPedido com [r].
+                  | Carrega as famílias de tipo que as outras entidades não usam: Long e Binary.
+            [e] en
+                [v] Who supplies an item's product. Referenced by ItemPedido with [r].
+                  | Carries the type families the other entities don't use: Long and Binary.
+    [g] identificacao
+        [d] id: Texto(36)
+            @
+                [e] cn
+                    [v] id
+                [e] title
+                    [e] pt
+                        [v] Identificador
+                    [e] en
+                        [v] Identifier
+                [e] required
+                    [v] true
+        [d] razaoSocial: Texto(150)
+            @
+                [e] cn
+                    [v] razao_social
+                [e] title
+                    [e] pt
+                        [v] Razão social
+                    [e] en
+                        [v] Company name
+                [e] required
+                    [v] true
+                [e] searchable
+                    [v] true
+        [d] codigoExterno: InteiroLongo(12)
+            @
+                [e] cn
+                    [v] codigo_externo
+                [e] title
+                    [e] pt
+                        [v] Código externo
+                    [e] en
+                        [v] External code
+    [g] anexos
+        [d] logotipo: Binario()
+            @
+                [e] cn
+                    [v] logotipo
+                [e] title
+                    [e] pt
+                        [v] Logotipo
+                    [e] en
+                        [v] Logo
+        [d] notasInternas: TextoLongo()
+            @
+                [e] cn
+                    [v] notas_internas
+                [e] title
+                    [e] pt
+                        [v] Notas internas
+                    [e] en
+                        [v] Internal notes
+                [e] storageOnly
+                    [v] true

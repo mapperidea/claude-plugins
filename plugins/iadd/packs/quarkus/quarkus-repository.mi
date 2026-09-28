@@ -1,0 +1,878 @@
+[e] repository
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] mapNativeTypes
+            [e] select
+                [v] //maps/mapNativeTypes
+        [e] mapNondeterministicSearchField
+            [e] select
+                [v] //maps/nondeterministicSearchField
+        [e] classes
+            [e] select
+                [v] /classes
+        [e] transactionManager
+            [e] expr
+                [v] /classes/package[@name = $package]/properties/transaction/value
+    [e] fragments
+        [e] tabulaDescription
+            [v] for $linha in functx:lines(string-join(properties/description/pt/value,codepoints-to-string(10))) return mi:tabulate-text(concat(normalize-space($linha),codepoints-to-string(10)),'* ',80)
+        [e] paramSeparator
+            [v] mi:if-else(position() = last(), '', ',')
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName  and @package = $package]
+        [e] body
+            [e] write-pattern
+                [v] package
+            [e] if
+                [v] attributes/attribute[properties/tenantKey]
+                [e] then
+                    [e] write-pattern
+                        [v] escopo-import
+            [e] write-pattern
+                [v] interface-start
+            [e] if
+                [v] attributes/attribute[properties/tenantKey]
+                [e] then
+                    [e] write-pattern
+                        [v] escopo-inject
+            [e] apply-templates
+                [e] select
+                    [v] attributes/attribute[properties/tenantKey]
+                [e] mode
+                    [v] acessoEscopadoPorId
+            [e] vars
+                [e] var
+                    [v] nameWithModule
+                    [e] expr
+                        [v] concat(substring-after(@package,'.domain.'),'.',@name)
+            [e] if
+                [v] attributes/attribute[@name = 'idErp']
+                [e] then
+                    [e] write-pattern
+                        [v] get-idErp
+            [e] if
+                [v] attributes/attribute[@name = 'uuid']
+                [e] then
+                    [e] write-pattern
+                        [v] get-uuid
+            [g] findWithFilters
+                [e] write-pattern
+                    [v] findWithFiltersStart
+                [e] apply-templates
+                    [e] select
+                        [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                    [e] mode
+                        [v] attributeParametersWithTypeString
+                [e] write-pattern
+                    [v] findWithFiltersBodyStart
+                [e] apply-templates
+                    [e] select
+                        [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                    [e] mode
+                        [v] attributeParametersWithoutType
+                [e] write-pattern
+                    [v] findWithFiltersBodyEnd
+            [g] countWithFilters
+                [e] write-pattern
+                    [v] countWithFiltersStart
+                [e] apply-templates
+                    [e] select
+                        [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                    [e] mode
+                        [v] attributeParametersWithTypeString
+                [e] write-pattern
+                    [v] countWithFiltersBodyStart
+                [e] apply-templates
+                    [e] select
+                        [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                    [e] mode
+                        [v] attributeParametersWithoutType
+                [e] write-pattern
+                    [v] countWithFiltersBodyEnd
+            [g] buildPredicates
+                [e] write-pattern
+                    [v] buildPredicatesStart
+                [e] apply-templates
+                    [e] select
+                        [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                    [e] mode
+                        [v] attributeParametersWithTypeString
+                [e] write-pattern
+                    [v] buildPredicatesBodyStart
+                [e] apply-templates
+                    [e] select
+                        [v] attributes/attribute[properties/tenantKey]
+                    [e] mode
+                        [v] predicadoDeEscopo
+                [e] apply-templates
+                    [e] select
+                        [v] attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode != 'oneToMany']
+                    [e] mode
+                        [v] buildPredicateCheckField
+                [e] write-pattern
+                    [v] buildPredicatesBodyEnd
+            [e] write-pattern
+                [v] getPredicateFromField
+            [e] write-pattern
+                [v] interface-close
+    [e] templates
+        [e] mode
+            [v] attributeParametersWithTypeString
+            [e] template
+                [e] match
+                    [v] attribute[@type != $mapNativeTypes/*/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] pacote
+                            [e] expr
+                                [v] substring-before(@type,'.')
+                        [e] var
+                            [v] tipo
+                            [e] expr
+                                [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                        [e] var
+                            [v] class
+                            [e] expr
+                                [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                    [e] if
+                        [v] .[@mode="manyToOne" or @mode="oneToOne" or @mode="composite"]
+                        [e] then
+                            [e] apply-templates
+                                [e] select
+                                    [v] $class/attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode = 'directToField' and (@name = $class/properties/sk/value/text() or properties/searchable)]
+                                [e] parameters
+                                    [e] attributeParent
+                                        [e] expr
+                                            [v] mi:first-lower(@name)
+                                [e] mode
+                                    [v] attributeParametersWithTypeString
+                            [e] if
+                                [v] $class/attributes/attribute[1][@name = 'idErp']
+                                [e] then
+                                    [e] write-pattern
+                                        [v] attributeAnyType-idErp-with-type-string
+                            [e] if
+                                [v] $class/attributes/attribute[@name = 'uuid']
+                                [e] then
+                                    [e] write-pattern
+                                        [v] attributeAnyType-uuid-with-type-string
+                            [e] write-pattern
+                                [v] attributeAnyType-with-type-string
+                        [e] else
+                            [e] apply-templates
+                                [e] select
+                                    [v] .
+                                [e] parameters
+                                    [e] nomeTODO
+                                        [v] @TODO_attributeParametersWithTypeString
+                                [e] mode
+                                    [v] assignTODO
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [v] paramSeparator
+                        [e] else
+                            [e] write-pattern
+                                [v] breakLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Date/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeDate-with-type-string
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [v] paramSeparator
+                        [e] else
+                            [e] write-pattern
+                                [v] breakLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeDateTime-with-type-string
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [v] paramSeparator
+                        [e] else
+                            [e] write-pattern
+                                [v] breakLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/String/value or @type = $mapNativeTypes/BigString/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeString-with-type-string
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [v] paramSeparator
+                        [e] else
+                            [e] write-pattern
+                                [v] breakLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Binary/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeBinary-with-type-string
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [v] paramSeparator
+                        [e] else
+                            [e] write-pattern
+                                [v] breakLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Integer/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeInteger-with-type-string
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [v] paramSeparator
+                        [e] else
+                            [e] write-pattern
+                                [v] breakLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Long/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeLong-with-type-string
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [v] paramSeparator
+                        [e] else
+                            [e] write-pattern
+                                [v] breakLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Double/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeDouble-with-type-string
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [v] paramSeparator
+                        [e] else
+                            [e] write-pattern
+                                [v] breakLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeBoolean-with-type-string
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [v] paramSeparator
+                        [e] else
+                            [e] write-pattern
+                                [v] breakLine
+        [e] mode
+            [v] attributeParametersWithoutType
+            [e] template
+                [e] match
+                    [v] attribute[@type != $mapNativeTypes/*/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] pacote
+                            [e] expr
+                                [v] substring-before(@type,'.')
+                        [e] var
+                            [v] tipo
+                            [e] expr
+                                [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                        [e] var
+                            [v] class
+                            [e] expr
+                                [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                    [e] if
+                        [v] .[@mode="manyToOne" or @mode="oneToOne" or @mode="composite"]
+                        [e] then
+                            [e] apply-templates
+                                [e] select
+                                    [v] $class/attributes/attribute[not(exists(properties/readOnly)) and not(exists(properties/storageOnly)) and @mode = 'directToField' and (@name = $class/properties/sk/value/text() or properties/searchable)]
+                                [e] parameters
+                                    [e] attributeParent
+                                        [e] expr
+                                            [v] mi:first-lower(@name)
+                                [e] mode
+                                    [v] attributeParametersWithoutType
+                            [e] if
+                                [v] $class/attributes/attribute[1][@name = 'idErp']
+                                [e] then
+                                    [e] write-pattern
+                                        [v] attributeAnyType-idErp-without-type
+                            [e] if
+                                [v] $class/attributes/attribute[@name = 'uuid']
+                                [e] then
+                                    [e] write-pattern
+                                        [v] attributeAnyType-uuid-without-type
+                            [e] write-pattern
+                                [v] attributeAnyType-without-type
+                        [e] else
+                            [e] apply-templates
+                                [e] select
+                                    [v] .
+                                [e] parameters
+                                    [e] nomeTODO
+                                        [v] @TODO_attributeParametersWithTypeString
+                                [e] mode
+                                    [v] assignTODO
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Date/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeDate-without-type
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeDateTime-without-type
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/String/value or @type = $mapNativeTypes/BigString/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeString-without-type
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [y] paramSeparatorLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Binary/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeBinary-without-type
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Integer/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeInteger-without-type
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [y] paramSeparatorLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Long/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeLong-without-type
+                    [e] if
+                        [v] position() != last() or $attributeParent != 'ND'
+                        [e] then
+                            [e] write-pattern
+                                [y] paramSeparatorLine
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Double/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeDouble-without-type
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                [e] parameters
+                    [e] attributeParent
+                        [v] ND
+                [e] body
+                    [e] write-pattern
+                        [v] attributeBoolean-without-type
+        [e] mode
+            [v] buildPredicateCheckField
+            [e] template
+                [e] match
+                    [v] attribute[@mode = 'directToField']
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] nondeterministicSearchField
+                            [e] expr
+                                [v] mi:if-else(exists($mapNondeterministicSearchField/value[text() = current()/@name]),'true','false')
+                    [e] write-pattern
+                        [v] predicateForNativeTypes
+            [e] template
+                [e] match
+                    [v] attribute[@mode = 'oneToOne']
+                [e] body
+                    [e] write-pattern
+                        [v] predicateForAnyType
+        [e] mode
+            [v] predicadoDeEscopo
+            [e] template
+                [e] match
+                    [v] attribute[@mode = 'directToField']
+                [e] body
+                    [e] write-pattern
+                        [v] escopo-predicado-campo
+            [e] template
+                [e] match
+                    [v] attribute
+                [e] body
+                    [e] write-pattern
+                        [v] escopo-predicado-relacao
+        [e] mode
+            [v] acessoEscopadoPorId
+            [e] template
+                [e] match
+                    [v] attribute[@mode = 'directToField']
+                [e] body
+                    [e] write-pattern
+                        [v] escopo-por-id-campo
+            [e] template
+                [e] match
+                    [v] attribute
+                [e] body
+                    [e] write-pattern
+                        [v] escopo-por-id-relacao
+    [e] patterns
+        [e] package
+            [v] package {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.repository;
+            [v] 
+            [v] import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+            [v] import io.quarkus.panache.common.Sort;
+            [v] import jakarta.enterprise.context.ApplicationScoped;
+            [v] import java.time.LocalDate;
+            [v] import java.time.LocalDateTime;
+            [v] import java.time.format.DateTimeFormatter;
+            [v] import java.util.ArrayList;
+            [v] import java.util.List;
+            [v] import java.util.Optional;
+            [v] import jakarta.inject.Inject;
+            [v] import jakarta.persistence.EntityManager;
+            [v] import jakarta.persistence.TypedQuery;
+            [v] import jakarta.persistence.criteria.*;
+            [v] import {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.entity.{{ @name }}Entity;
+        [e] escopo-import
+            [v] import com.exemplo.tenant.EscopoTenant;
+        [e] escopo-inject
+            [v] 
+            [v]     /**
+            [v]      * Escopo de tenant do acesso (isolamento multi-tenant). Governante desta entidade:
+            [v]      * <b>{{ attributes/attribute[properties/tenantKey]/@name }}</b>, declarado com
+            [v]      * {@code tenantKey} no mapa .mi.
+            [v]      *
+            [v]      * <p>O predicado sai daqui e nao de parametro: filtro de query e conveniencia do
+            [v]      * usuario, escopo e do sistema, e os dois convivem com o do sistema mandando.
+            [v]      */
+            [v]     @Inject EscopoTenant escopo;
+        [e] escopo-predicado-campo
+            [v]         if (!escopo.irrestrito()) {
+            [v]             predicates.add(cb.equal(root.get("{{ @name }}"), escopo.exigir("{{ properties/cn/value }}")));
+            [v]         }
+            [v] 
+        [e] escopo-predicado-relacao
+            [v]         if (!escopo.irrestrito()) {
+            [v]             predicates.add(cb.equal(root.join("{{ @name }}", JoinType.INNER).get("id"), escopo.exigir("{{ properties/cn/value }}")));
+            [v]         }
+            [v] 
+        [e] escopo-por-id-campo
+            [v] 
+            [v]     /**
+            [v]      * Busca por id <b>dentro do escopo</b>. Registro de outro tenant nao e
+            [v]      * encontrado — e {@code Optional.empty()} vira 404 no resource, nunca 403: 403
+            [v]      * confirmaria que o id existe, que e metade do que um enumerador quer saber.
+            [v]      *
+            [v]      * <p>Sobrescreve o metodo do Panache de proposito: e por ele que passam tambem o
+            [v]      * PUT, o PATCH e os mappers de relacionamento.
+            [v]      */
+            [v]     @Override
+            [v]     public Optional<{{ ../../@name }}Entity> findByIdOptional(String id) {
+            [v]         if (escopo.irrestrito()) {
+            [v]             return find("id = ?1", id).firstResultOptional();
+            [v]         }
+            [v]         return find("id = ?1 and {{ @name }} = ?2", id, escopo.exigir("{{ properties/cn/value }}"))
+            [v]                 .firstResultOptional();
+            [v]     }
+            [v] 
+            [v]     /** Gemeo escopado de {@code findByIdOptional} — o Panache expoe os dois, e servico usa este. */
+            [v]     @Override
+            [v]     public {{ ../../@name }}Entity findById(String id) {
+            [v]         return findByIdOptional(id).orElse(null);
+            [v]     }
+            [v] 
+            [v]     /** Remocao escopada: id de outro tenant nao e encontrado, logo nao e removido. */
+            [v]     @Override
+            [v]     public boolean deleteById(String id) {
+            [v]         return findByIdOptional(id).map(e -> { delete(e); return true; }).orElse(false);
+            [v]     }
+            [v] 
+            [v]     /**
+            [v]      * Grava <b>impondo</b> o tenant do contexto — nao valida o que veio no body.
+            [v]      *
+            [v]      * <p>Validar deixaria a decisao de "o que fazer quando diverge" espalhada pelos
+            [v]      * resources; impor tira a escolha do chamador, que e o ponto.
+            [v]      */
+            [v]     @Override
+            [v]     public void persist({{ ../../@name }}Entity entity) {
+            [v]         if (!escopo.irrestrito()) {
+            [v]             entity.set{{ mi:first-upper(@name) }}(escopo.exigir("{{ properties/cn/value }}"));
+            [v]         }
+            [v]         em.persist(entity);
+            [v]     }
+        [e] escopo-por-id-relacao
+            [v] 
+            [v]     /**
+            [v]      * Busca por id <b>dentro do escopo</b>, pela relacao {@code {{ @name }}}.
+            [v]      * Registro de outro tenant nao e encontrado — 404, nunca 403.
+            [v]      */
+            [v]     @Override
+            [v]     public Optional<{{ ../../@name }}Entity> findByIdOptional(String id) {
+            [v]         if (escopo.irrestrito()) {
+            [v]             return find("id = ?1", id).firstResultOptional();
+            [v]         }
+            [v]         return find("id = ?1 and {{ @name }}.id = ?2", id, escopo.exigir("{{ properties/cn/value }}"))
+            [v]                 .firstResultOptional();
+            [v]     }
+            [v] 
+            [v]     /** Gemeo escopado de {@code findByIdOptional} — o Panache expoe os dois, e servico usa este. */
+            [v]     @Override
+            [v]     public {{ ../../@name }}Entity findById(String id) {
+            [v]         return findByIdOptional(id).orElse(null);
+            [v]     }
+            [v] 
+            [v]     /** Remocao escopada: id de outro tenant nao e encontrado, logo nao e removido. */
+            [v]     @Override
+            [v]     public boolean deleteById(String id) {
+            [v]         return findByIdOptional(id).map(e -> { delete(e); return true; }).orElse(false);
+            [v]     }
+        [e] interface-start
+            [v] 
+            [v] @ApplicationScoped
+            [v] public class {{ @name }}Repository implements PanacheRepositoryBase<{{ @name }}Entity, String> {
+            [v] 
+            [v]     @Inject EntityManager em;
+        [e] get-idErp
+            [v]
+            [v]     public Optional<{{ @name }}Entity> findByIdErp(String idErp) {
+            [v]         return find("idErp", idErp).firstResultOptional();
+            [v]     }
+        [e] get-uuid
+            [v]
+            [v]     public Optional<{{ @name }}Entity> findByUuid(String uuid) {
+            [v]         return find("uuid", uuid).firstResultOptional();
+            [v]     }
+        [e] interface-close
+            [v] 
+            [v] }
+        [e] getPredicateFromField
+            [v] 
+            [v]     public List<Predicate> getPredicateFromField(List<Predicate> predicates, String attributeName, String value, Root<{{@name}}Entity> root, CriteriaBuilder criteriaBuilder, boolean unaccent) {
+              |         String fieldType = root.get(attributeName).getJavaType().getName();
+              |         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+              |         DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+              |         if (value.startsWith("upper(")) {
+              |             predicates.add(criteriaBuilder.equal(criteriaBuilder.upper(root.get(attributeName)), value.toUpperCase()));
+              |         } else if (value.contains("*")) {
+              |             if (unaccent) {
+              |                 Expression<String> fieldExpr = criteriaBuilder.function("unaccent", String.class, criteriaBuilder.lower(root.get(attributeName)));
+              |                 Expression<String> valueExpr = criteriaBuilder.function("unaccent", String.class, criteriaBuilder.literal(value.toLowerCase().replace("*", "%")));
+              |                 predicates.add(criteriaBuilder.like(fieldExpr, valueExpr));
+              |             } else {
+              |                 predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get(attributeName)), value.toLowerCase().replace("*","%")));
+              |             }
+              |         } else if (value.startsWith("less(")) {
+              |             value = value.substring(value.indexOf("(")+1, value.indexOf(")"));
+              |             if (fieldType.equals("java.lang.Integer")) {
+              |                 predicates.add(criteriaBuilder.lessThan(root.get(attributeName), Integer.decode(value)));
+              |             } else if (fieldType.equals("java.lang.Double")) {
+              |                 predicates.add(criteriaBuilder.lessThan(root.get(attributeName), Double.parseDouble(value)));
+              |             } else if (fieldType.equals("java.lang.Boolean")) {
+              |                 predicates.add(criteriaBuilder.lessThan(root.get(attributeName), Boolean.parseBoolean(value))); 
+              |             } else if (fieldType.equals("java.time.LocalDate")) {
+              |                 predicates.add(criteriaBuilder.lessThan(root.get(attributeName),  LocalDate.parse(value, formatter))); 
+              |             } else if (fieldType.equals("java.time.LocalDateTime")) {
+              |                 predicates.add(criteriaBuilder.lessThan(root.get(attributeName),  LocalDateTime.parse(value, formatterDateTime))); 
+              |             }
+              |         } else if (value.startsWith("lessEquals(")) {
+              |             value = value.substring(value.indexOf("(")+1, value.indexOf(")"));
+              |             if (fieldType.equals("java.lang.Integer")) {
+              |                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get(attributeName), Integer.decode(value)));
+              |             } else if (fieldType.equals("java.lang.Double")) {
+              |                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get(attributeName), Double.parseDouble(value)));
+              |             } else if (fieldType.equals("java.lang.Boolean")) {
+              |                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get(attributeName), Boolean.parseBoolean(value))); 
+              |             } else if (fieldType.equals("java.time.LocalDate")) {
+              |                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get(attributeName),  LocalDate.parse(value, formatter))); 
+              |             } else if (fieldType.equals("java.time.LocalDateTime")) {
+              |                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get(attributeName),  LocalDateTime.parse(value, formatterDateTime))); 
+              |             }
+              |         } else if (value.startsWith("notEquals(")) {
+              |             value = value.substring(value.indexOf("(")+1, value.indexOf(")"));
+              |             if (fieldType.equals("java.lang.Integer")) {
+              |                 predicates.add(criteriaBuilder.notEqual(root.get(attributeName), Integer.decode(value)));
+              |             } else if (fieldType.equals("java.lang.Double")) {
+              |                 predicates.add(criteriaBuilder.notEqual(root.get(attributeName), Double.parseDouble(value)));
+              |             } else if (fieldType.equals("java.lang.Boolean")) {
+              |                 predicates.add(criteriaBuilder.notEqual(root.get(attributeName), Boolean.parseBoolean(value))); 
+              |             } else if (fieldType.equals("java.time.LocalDate")) {
+              |                 predicates.add(criteriaBuilder.notEqual(root.get(attributeName),  LocalDate.parse(value, formatter))); 
+              |             } else if (fieldType.equals("java.time.LocalDateTime")) {
+              |                 predicates.add(criteriaBuilder.notEqual(root.get(attributeName),  LocalDateTime.parse(value, formatterDateTime))); 
+              |             }
+              |         } else if (value.startsWith("greater(")) {
+              |             value = value.substring(value.indexOf("(")+1, value.indexOf(")"));
+              |             if (fieldType.equals("java.lang.Integer")) {
+              |                 predicates.add(criteriaBuilder.greaterThan(root.get(attributeName), Integer.decode(value)));
+              |             } else if (fieldType.equals("java.lang.Double")) {
+              |                 predicates.add(criteriaBuilder.greaterThan(root.get(attributeName), Double.parseDouble(value)));
+              |             } else if (fieldType.equals("java.lang.Boolean")) {
+              |                 predicates.add(criteriaBuilder.greaterThan(root.get(attributeName), Boolean.parseBoolean(value))); 
+              |             } else if (fieldType.equals("java.time.LocalDate")) {
+              |                 predicates.add(criteriaBuilder.greaterThan(root.get(attributeName), LocalDate.parse(value, formatter))); 
+              |             } else if (fieldType.equals("java.time.LocalDateTime")) {
+              |                 predicates.add(criteriaBuilder.greaterThan(root.get(attributeName), LocalDateTime.parse(value, formatterDateTime))); 
+              |             }
+              |             
+              |         } else if (value.startsWith("greaterEquals(")) {
+              |             value = value.substring(value.indexOf("(")+1, value.indexOf(")"));
+              |             if (fieldType.equals("java.lang.Integer")) {
+              |                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get(attributeName), Integer.decode(value)));
+              |             } else if (fieldType.equals("java.lang.Double")) {
+              |                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get(attributeName), Double.parseDouble(value)));
+              |             } else if (fieldType.equals("java.lang.Boolean")) {
+              |                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get(attributeName), Boolean.parseBoolean(value))); 
+              |             } else if (fieldType.equals("java.time.LocalDate")) {
+              |                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get(attributeName), LocalDate.parse(value, formatter))); 
+              |             } else if (fieldType.equals("java.time.LocalDateTime")) {
+              |                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get(attributeName), LocalDateTime.parse(value, formatterDateTime))); 
+              |             }
+              |         } else if (value.startsWith("between(")) {
+              |             String[] betweenValues = value.substring(8, value.indexOf(")")).split(",");
+              |             if (fieldType.equals("java.lang.Integer")) {
+              |                 predicates.add(criteriaBuilder.between(root.get(attributeName), Integer.decode(betweenValues[0]), Integer.decode(betweenValues[1])));
+              |             } else if (fieldType.equals("java.lang.Double")) {
+              |                 predicates.add(criteriaBuilder.between(root.get(attributeName), Double.parseDouble(betweenValues[0]), Double.parseDouble(betweenValues[1])));
+              |             } else if (fieldType.equals("java.time.LocalDate")) {
+              |                 predicates.add(criteriaBuilder.between(root.get(attributeName), LocalDate.parse(betweenValues[0], formatter), LocalDate.parse(betweenValues[1], formatter)));
+              |             } else if (fieldType.equals("java.time.LocalDateTime")) {
+              |                 predicates.add(criteriaBuilder.between(root.get(attributeName), LocalDateTime.parse(betweenValues[0], formatterDateTime), LocalDateTime.parse(betweenValues[1], formatterDateTime)));
+              |             } else {
+              |                 predicates.add(criteriaBuilder.between(root.get(attributeName), betweenValues[0], betweenValues[1]));
+              |             }
+              |         } else if (value.startsWith("is(null)")) {
+              |             predicates.add(criteriaBuilder.isNull(root.get(attributeName)));
+              |         } else if (value.startsWith("is(!null)")) {
+              |             predicates.add(criteriaBuilder.isNotNull(root.get(attributeName)));
+              |         } else {
+              |             if (fieldType.equals("java.lang.Integer")) {
+              |                 predicates.add(criteriaBuilder.equal(root.get(attributeName), Integer.decode(value)));
+              |             } else if (fieldType.equals("java.lang.Double")) {
+              |                 predicates.add(criteriaBuilder.equal(root.get(attributeName), Double.parseDouble(value)));
+              |             } else if (fieldType.equals("java.lang.Boolean")) {
+              |                 predicates.add(criteriaBuilder.equal(root.get(attributeName), Boolean.parseBoolean(value))); 
+              |             } else if (fieldType.equals("java.time.LocalDate")) {
+              |                 predicates.add(criteriaBuilder.equal(root.get(attributeName), LocalDate.parse(value, formatter))); 
+              |             } else if (fieldType.equals("java.time.LocalDateTime")) {
+              |                 predicates.add(criteriaBuilder.equal(root.get(attributeName), LocalDateTime.parse(value, formatterDateTime))); 
+              |             } else {
+              |                 predicates.add(criteriaBuilder.equal(root.get(attributeName), value));  
+              |             }
+              |         }    
+              |         return predicates;
+              |     }
+              | 
+        [g] findWithFilters
+            [e] findWithFiltersStart
+                [v] 
+                [v]     public List<{{ @name }}Entity> findWithFilters(
+                [v]         int offset,
+                [v]         int pageSize,
+                [v]         Sort sort,
+            [e] findWithFiltersBodyStart
+                [v]     ) {
+                [v]         CriteriaBuilder cb = em.getCriteriaBuilder();
+                [v]         CriteriaQuery<{{ @name }}Entity> cq = cb.createQuery({{ @name }}Entity.class);
+                [v]         Root<{{ @name }}Entity> root = cq.from({{ @name }}Entity.class);
+                [y]         List<Predicate> predicates = buildPredicates(cb, root,
+            [e] findWithFiltersBodyEnd
+                [v] );
+                [v]         cq.where(cb.and(predicates.toArray(new Predicate[0])));
+                [v] 
+                [v]         if (sort != null) {
+                [v]             List<Order> orders = new ArrayList<>();
+                [v]             sort.getColumns().forEach(col -> {
+                [v]                 if (col.getDirection() == Sort.Direction.Ascending) orders.add(cb.asc(root.get(col.getName())));
+                [v]                 else orders.add(cb.desc(root.get(col.getName())));
+                [v]             });
+                [v]             cq.orderBy(orders);
+                [v]         }
+                
+                [v]         TypedQuery<{{ @name }}Entity> query = em.createQuery(cq);
+                [v]         query.setFirstResult(offset);
+                [v]         query.setMaxResults(pageSize);
+                [v] 
+                [v]         return query.getResultList();
+                [v]     }
+        [g] countWithFilters
+            [e] countWithFiltersStart
+                [v] 
+                [v]     public long countWithFilters(
+            [e] countWithFiltersBodyStart
+                [v]     ) {
+                [v]         CriteriaBuilder cb = em.getCriteriaBuilder();
+                [v]         CriteriaQuery<Long> cq = cb.createQuery(Long.class);
+                [v]         Root<{{ @name }}Entity> root = cq.from({{ @name }}Entity.class);
+                [y]         List<Predicate> predicates = buildPredicates(cb, root,
+            [e] countWithFiltersBodyEnd
+                [v] );
+                [v]         cq.select(cb.count(root)).where(cb.and(predicates.toArray(new Predicate[0])));
+                [v] 
+                [v]         return em.createQuery(cq).getSingleResult();
+                [v]     }
+        [g] buildPredicates
+            [e] buildPredicatesStart
+                [v] 
+                [v]     private List<Predicate> buildPredicates(
+                [v]         CriteriaBuilder cb,
+                [v]         Root<{{ @name }}Entity> root,
+            [e] buildPredicatesBodyStart
+                [v]     ) {
+                [v]         List<Predicate> predicates = new ArrayList<>();
+                [v] 
+            [e] buildPredicatesBodyEnd
+                [v]         return predicates;
+                [v]     }
+            [e] predicateForNativeTypes
+                [v]         if ({{ @name }} != null) getPredicateFromField(predicates, "{{ @name }}", {{ @name }}, root, cb, {{ $nondeterministicSearchField }});
+            [e] predicateForAnyType
+                [v]         if ({{ @name }}Id != null) {
+                [v]             predicates.add(cb.equal(root.join("{{ @name }}", JoinType.INNER).get("id"), {{ @name }}Id));
+                [v]         }
+        [g] attributes-without-type
+            [e] attributeAnyType-idErp-without-type
+                [y] {{ @name }}IdErp,
+            [e] attributeAnyType-uuid-without-type
+                [y] {{ @name }}Uuid,
+            [e] attributeAnyType-without-type
+                [y]  {{ @name }}Id{{ f#[paramSeparator] }}
+            [e] attributeDate-without-type
+                [y]  {{ @name }}{{ f#[paramSeparator] }}
+            [e] attributeDateTime-without-type
+                [y]  {{ @name }}{{ f#[paramSeparator] }}
+            [e] attributeBinary-without-type
+                [y]  {{ @name }}{{ f#[paramSeparator] }}
+            [e] attributeString-without-type
+                [y]  {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeInteger-without-type
+                [y]  {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeLong-without-type
+                [y]  {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeDouble-without-type
+                [y]  {{ @name }}{{ f#[paramSeparator] }}
+            [e] attributeBoolean-without-type
+                [y]  {{ @name }}{{ f#[paramSeparator] }}
+        [g] attributes-with-type-string
+            [e] attributeAnyType-idErp-with-type-string
+                [v]       String {{ @name }}IdErp,
+            [e] attributeAnyType-uuid-with-type-string
+                [v]       String {{ @name }}Uuid,
+            [e] attributeAnyType-with-type-string
+                [y]         String {{ @name }}Id
+            [e] attributeDate-with-type-string
+                [y]        String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeDateTime-with-type-string
+                [y]         String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeString-with-type-string
+                [y]         String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeBinary-with-type-string
+                [y]         String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeInteger-with-type-string
+                [y]         String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeLong-with-type-string
+                [y]         String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeDouble-with-type-string
+                [y]         String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+            [e] attributeBoolean-with-type-string
+                [y]         String {{ mi:if-else($attributeParent != 'ND', concat($attributeParent, mi:first-upper(@name)), @name) }}
+        [g] generic
+            [e] breakLine
+                [v] 
+            [e] paramSeparator
+                [v] ,
+            [e] paramSeparatorLine
+                [y] ,

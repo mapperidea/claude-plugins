@@ -1,0 +1,1232 @@
+[e] entity
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] vars
+        [e] mapNativeTypes
+            [e] select
+                [v] //maps/mapNativeTypes
+        [e] classes
+            [e] select
+                [v] /classes
+        [e] currentClassType
+            [e] expr
+                [v] $modelName
+        [e] optimisticLock
+            [e] expr
+                [v] if (/classes/package[@name = $package]/properties/optimisticLock/value = 'false') then 'NO' else 'YES'
+    [e] fragments
+        [e] tabulaDescription
+            [v] for $linha in functx:lines(string-join(properties/description/pt/value,codepoints-to-string(10))) return mi:tabulate-text(concat(normalize-space($linha),codepoints-to-string(10)),'* ',80)
+        [e] paramSeparator
+            [v] mi:if-else(position() = last(), '', ',')
+        [e] column
+            [v] upper-case(properties/cn/value)
+    [e] patterns
+        [e] package
+            [v] package {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.entity;
+            [v] 
+            [v] import jakarta.persistence.Column;
+            [v] import jakarta.persistence.Entity;
+            [v] import jakarta.persistence.GeneratedValue;
+            [v] import jakarta.persistence.GenerationType;
+            [v] import jakarta.persistence.Id;
+            [v] import jakarta.persistence.Table;
+            [v] {{ if ($optimisticLock = 'YES') then 'import jakarta.persistence.Version;' else 'import jakarta.persistence.Transient;'
+            [v] import java.time.LocalDateTime;
+        [e] class-start
+            [v] 
+            [v] /*
+            [v] {{ f#[tabulaDescription] }}
+            [v] */
+            [v] @Entity
+            [v] @Table(name = "{{ upper-case(@name) }}")
+            [v] public class {{ @name }}Entity {
+            [v]
+            [v]     {{ if ($optimisticLock = 'YES') then '@Version' else '//For future use of optimistic lock' }}
+            [v]     {{ if ($optimisticLock = 'YES') then '@Column(name="VERSION")' else '@Transient' }}
+            [v]     private LocalDateTime version;
+        [e] class-close
+            [v] 
+            [v] }
+        [g] attributes
+            [g] oneToOne
+                [e] attribute-oneToOne
+                    [v]     private {{ $class/@name }}Entity {{ @name }};
+                [g] annotation
+                    [e] annotation-oneToOne-inicio
+                        [v] 
+                        [y]     @ManyToOne(
+                    [e] annotation-oneToOne-fim
+                        [v] )
+                        [v]     @JoinColumn(name="{{ f#[column] }}", nullable = true)
+                    [e] annotation-fetch-eager
+                        [y] fetch = FetchType.EAGER
+                    [e] annotation-fetch-padrao
+                        [y] fetch = FetchType.LAZY
+            [g] manyToOne
+                [e] attribute-manyToOne
+                    [v]     private {{ $class/@name }}Entity {{ @name }};
+                [g] annotation
+                    [e] annotation-manyToOne-inicio
+                        [v] 
+                        [y]     @ManyToOne(
+                    [e] annotation-manyToOne-fim
+                        [v] )
+                        [v]     @JoinColumn(name="{{ f#[column] }}", nullable = true)
+            [e] attributeComposite
+                [v] 
+                [v]     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+                [v]     @JoinColumn(name="{{ f#[column] }}", nullable = true)
+                [v]     private {{ $class/@name }}Entity {{ @name }};
+            [e] attributeDate
+                [v] 
+                [v]     @Column(name="{{ f#[column] }}")
+                [v]     private LocalDate {{ @name }};
+            [e] attributeDateTime
+                [v] 
+                [v]     @Column(name="{{ f#[column] }}")
+                [v]     private LocalDateTime {{ @name }};
+            [e] attributeCollection
+                [v] 
+                [v]     @OneToMany(mappedBy="{{ $class/attributes/attribute[@mode = 'manyToOne' and @type = $currentClassType]/@name }}", fetch = FetchType.LAZY)
+                [v]     private List<{{ $class/@name }}Entity> {{ @name }};
+            [e] attribute-directMap
+                [v] 
+                [v]     private Map<{{ $class/@name }}Entity> {{ @name }};
+            [e] attributeString
+                [v]     private String {{ @name }};
+            [e] attributeIdUuid
+                [v]
+                [v]     @Id
+                [v]     @GeneratedValue(strategy = GenerationType.UUID)
+                [v]     @Column(name = "{{ f#[column] }}", updatable = false, nullable = false, length = {{ @typeParameter }})
+                [v]     private String {{ @name }};
+            [e] attributeBinary
+                [v] 
+                [v]     // SEM @Lob, e isso e deliberado: em PostgreSQL, @Lob byte[] mapeia para OID
+                [v]     // (large object), nao para BYTEA. Large object tem ciclo de vida PROPRIO --
+                [v]     // apagar a linha NAO apaga o objeto, quem apaga e lo_unlink --, entao toda
+                [v]     // entidade que zere um campo binario vazaria: objeto orfao em pg_largeobject,
+                [v]     // sem dono, sem referencia e sem ninguem para notar.
+                [v]     // Comportamento confirmado por teste de integracao em Postgres real.
+                [v]     // Em H2 o defeito e INVISIVEL (o schema de teste sai da propria anotacao).
+                [v]     // Quem precisar de large object de verdade tem caso diferente e merece
+                [v]     // declaracao explicita, nao default.
+                [v]     // O `length` NAO e decorativo: sem ele, o H2 cria BINARY VARYING(255) e um
+                [v]     // upload de 300 bytes ja estoura. Postgres ignora tamanho em BYTEA, entao a
+                [v]     // anotacao so tem efeito onde o schema sai da anotacao -- que e o perfil de
+                [v]     // teste. Sem isto, o defeito e invisivel em producao e constante no teste.
+                [v]     @Column(name="{{ f#[column] }}"{{ if (@typeParameter != '') then concat(', length=', @typeParameter) else '' }})
+                [v]     private byte[] {{ @name }};
+            [e] attributeInteger
+                [v]     private Integer {{ @name }};
+            [e] attributeLong
+                [v] 
+                [v]     @Column(name="{{ f#[column] }}")
+                [v]     private Long {{ @name }};
+            [e] attributeDouble
+                [v]     private Double {{ @name }};
+            [e] attributeBoolean
+                [v] 
+                [v]     @Column(name="{{ f#[column] }}")
+                [v]     private Boolean {{ @name }};
+            [e] quebraLinha
+                [v] 
+            [g] annotation
+                [g] Column
+                    [e] annotationColumn-inicio
+                        [y]     @Column(name="{{ f#[column] }}"
+                    [e] annotationColumn-fim
+                        [v] )
+                    [e] annotationColumn-length
+                        [y] , length={{ @typeParameter }}
+                    [e] annotationColumn-columnDefinition
+                        [y] , columnDefinition="TEXT"
+                    [e] annotationColumn-precision
+                        [y] , precision = {{ functx:substring-before-if-contains(@typeParameter, ',') }}
+        [g] imports
+            [e] import-list
+                [v] import java.util.List;
+                [v] import jakarta.persistence.OneToMany;
+            [e] import-map
+                [v] import java.util.Map;
+                [v] import java.util.HashMap;
+            [e] import-fetchType
+                [v] import jakarta.persistence.FetchType;
+            [e] import-date
+                [v] import java.time.LocalDate;
+            [e] import-dateTime
+            [e] import-oneToOne
+                [v] import jakarta.persistence.OneToOne;
+            [e] import-manyToOne
+                [v] import jakarta.persistence.ManyToOne;
+            [e] import-joinColumn
+                [v] import jakarta.persistence.JoinColumn;
+            [e] import
+                [v] import {{ substring-before($class/@package,'.domain.') }}.{{ substring-after($class/@package,'.domain.') }}.entity.{{ $class/@name }}Entity;
+            [e] import-cascadeType
+                [v] import jakarta.persistence.CascadeType;
+            [e] importClass
+                [v] import {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.domain.{{ @name }};
+                [v] import {{ substring-before(@package,'.domain.') }}.{{ substring-after(@package,'.domain.') }}.builder.{{ @name }}EntityBuilder;
+        [g] constructor
+            [e] defaultConstructor-start
+                [v] 
+                [v]     public {{ ../@name }}Entity() {
+            [e] defaultConstructor-close
+                [v]     }
+            [e] defaultConstructor-setAnyTypeCollection
+                [v]         this.{{ @name }} = new ArrayList<{{ $class/@name }}>();
+            [e] defaultConstructor-setAnyTypeMap
+                [v]         this.{{ @name }} = new HashMap<{{ $class/@name }}Entity>();
+            [e] defaultConstructor-setAnyType
+                [v]         this.{{ @name }} = null;
+            [e] defaultConstructor-setDate
+                [v]         this.{{ @name }} = null;
+            [e] defaultConstructor-setDateTime
+                [v]         this.{{ @name }} = null;
+            [e] defaultConstructor-setString
+                [v]         this.{{ @name }} = {{ if (properties/defaultValue/value) then concat('"',properties/defaultValue/value,'"') else 'null' }};
+            [e] defaultConstructor-setInteger
+                [v]         this.{{ @name }} = {{ if (properties/defaultValue/value) then functx:substring-before-if-contains(properties/defaultValue/value,'.') else 0 }};
+            [e] defaultConstructor-setLong
+                [v]         this.{{ @name }} = {{ if (properties/defaultValue/value) then functx:substring-before-if-contains(properties/defaultValue/value,'.') else 0 }};
+            [e] defaultConstructor-setDouble
+                [v]         this.{{ @name }} = {{ functx:if-absent(properties/defaultValue/value, '0.0') }};
+            [e] defaultConstructor-setBoolean
+                [v]         this.{{ @name }} = {{ functx:if-absent(properties/defaultValue/value, false) }};
+            [e] allArgsConstructor-start
+                [v] 
+                [v]     public {{ ../@name }}Entity(
+            [e] allArgsConstructor-closeParams
+                [v]     ) {
+            [e] allArgsConstructor-close
+                [v]     }
+            [e] allArgsConstructor-paramAnyTypeCollection
+                [v]         List<{{ $class/@name }}Entity> {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramAnyTypeMap
+                [v]         Map<String, {{ $class/@name }}> {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramAnyType
+                [v]         {{ $class/@name }}Entity {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramComposite
+                [v]         {{ $class/@name }}Entity {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramDate
+                [v]         LocalDate {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramDateTime
+                [v]         LocalDateTime {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramString
+                [v]         String {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramBinary
+                [v]         byte[] {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramInteger
+                [v]         Integer {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramLong
+                [v]         Long {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramDouble
+                [v]         Double {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-paramBoolean
+                [v]         Boolean {{ @name }}{{ f#[paramSeparator] }}
+            [e] allArgsConstructor-bodyAnyTypeCollection
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyAnyTypeMap
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyAnyType
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyDate
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyDateTime
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyString
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyInteger
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyLong
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyDouble
+                [v]         this.{{ @name }} = {{ @name }};
+            [e] allArgsConstructor-bodyBoolean
+                [v]         this.{{ @name }} = {{ @name }};
+        [g] accessors
+            [e] accessorSystemFields
+                [v]
+                [v]     public void setVersion(LocalDateTime version) {
+                [v]         this.version = version;
+                [v]     }
+                [v] 
+                [v]     public LocalDateTime getVersion() {
+                [v]         return this.version;
+                [v]     }
+            [e] accessorAnyType
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}({{ $class/@name }}Entity {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public {{ $class/@name }}Entity get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorComposite
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}({{ $class/@name }}Entity {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public {{ $class/@name }}Entity get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorDate
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(LocalDate {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public LocalDate get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorDateTime
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(LocalDateTime {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public LocalDateTime get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorAnyTypeCollection
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(List<{{ $class/@name }}Entity> {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public List<{{ $class/@name }}Entity> get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorAnyTypeMap
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(Map<{{ $class/@name }}Entity> {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public Map<{{ $class/@name }}Entity> get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorString
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(String {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public String get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorBinary
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(byte[] {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public byte[] get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorInteger
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(Integer {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public Integer get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorLong
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(Long {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public Long get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorDouble
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(Double {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public Double get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+            [e] accessorBoolean
+                [v] 
+                [v]     public void set{{ mi:first-upper(@name) }}(Boolean {{ @name }}) {
+                [v]         this.{{ @name }} = {{ @name }};
+                [v]     }
+                [v] 
+                [v]     public Boolean get{{ mi:first-upper(@name) }}() {
+                [v]         return this.{{ @name }};
+                [v]     }
+        [g] builder
+            [e] builderConstructor-start
+                [v] 
+                [v]     public {{ ../@name }}Entity({{ ../@name }}EntityBuilder builder) {
+                [v]         this.version = builder.version;
+            [e] builderConstructor-close
+                [v]     }
+            [e] builderConstructor-bodyAnyTypeCollection
+                [v]         this.{{ @name }} = builder.{{ @name }};
+            [e] builderConstructor-bodyAnyTypeMap
+                [v]         this.{{ @name }} = builder.{{ @name }};
+            [e] builderConstructor-bodyAnyType
+                [v]         this.{{ @name }} = builder.{{ @name }};
+            [e] builderConstructor-bodyDate
+                [v]         this.{{ @name }} = builder.{{ @name }};
+            [e] builderConstructor-bodyDateTime
+                [v]         this.{{ @name }} = builder.{{ @name }};
+            [e] builderConstructor-bodyString
+                [v]         this.{{ @name }} = builder.{{ @name }};
+            [e] builderConstructor-bodyInteger
+                [v]         this.{{ @name }} = builder.{{ @name }};
+            [e] builderConstructor-bodyLong
+                [v]         this.{{ @name }} = builder.{{ @name }};
+            [e] builderConstructor-bodyDouble
+                [v]         this.{{ @name }} = builder.{{ @name }};
+            [e] builderConstructor-bodyBoolean
+                [v]         this.{{ @name }} = builder.{{ @name }};
+            [e] builderOfNoArgs
+                [v] 
+                [v]     public static {{ ../@name }}EntityBuilder builderOf() {
+                [v]         return new {{ ../@name }}EntityBuilder();
+                [v]     }
+        [g] @TODO
+            [e] declaraTODO
+                [v] //@TODO _ tem que implementar: {{ $nomeTODO }}
+                [v] //Caminho xpath: {{ functx:path-to-node-with-pos(current()) }}
+            [e] declara-labelEstruturaXpath
+            [e] start-labelEstruturaXpath
+                [y] //Estrutura xpath: .[
+            [e] end-labelEstruturaXpath
+                [v] ]
+            [e] declara-nomeDoElemento
+                [y] name()='{{ name() }}'
+            [g] Estrutura xpath
+                [e] declara-barra
+                    [y] /
+                [e] declara-contadorElementosFilhos
+                    [y] count(*)={{ count(child::*) }}
+                [e] declara-andEspacoEmBranco
+                    [y]  and 
+                [e] declara-clausulaPositionName
+                    [y] child::*[position()={{ position() }} and name()='{{ name() }}']
+                [e] start-clausulaContZeroText
+                    [y] /.[count(*)=0 and 
+                [e] end-clausulaContZeroText
+                    [y] ]
+                [e] declara-clausulaText
+                    [y] text()='{{ text() }}'
+                [e] declara-clausulaTextName
+                    [y] text()
+                [e] declara-prefixoName
+                    [y] {{ $prefixoNome }}
+                [e] declara-clausulaNotTextName
+                    [y] not(text())
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [g] imports
+                [e] write-pattern
+                    [v] package
+                [e] write-pattern
+                    [v] importClass
+                [e] if
+                    [v] attributes/attribute[@mode = 'composite']
+                    [e] then
+                        [e] write-pattern
+                            [v] import-cascadeType
+                [e] if
+                    [v] attributes/attribute[@mode = 'oneToOne' or @mode = 'manyToOne' or @mode = 'oneToMany' or @mode = 'composite']
+                    [e] then
+                        [e] write-pattern
+                            [v] import-fetchType
+                [e] if
+                    [v] attributes/attribute[@mode = 'oneToMany']
+                    [e] then
+                        [e] write-pattern
+                            [v] import-list
+                [e] if
+                    [v] attributes/attribute[@mode = 'oneToOne' or @mode = 'manyToOne' or @mode = 'composite']
+                    [e] then
+                        [e] write-pattern
+                            [v] import-joinColumn
+                [e] if
+                    [v] attributes/attribute[@mode = 'composite']
+                    [e] then
+                        [e] write-pattern
+                            [v] import-oneToOne
+                [e] if
+                    [v] attributes/attribute[@mode = 'manyToOne' or @mode = 'oneToOne']
+                    [e] then
+                        [e] write-pattern
+                            [v] import-manyToOne
+                [e] if
+                    [v] attributes/attribute[@mode = 'directMap']
+                    [e] then
+                        [e] write-pattern
+                            [v] import-map
+                [e] if
+                    [v] attributes/attribute[@type = $mapNativeTypes/Date/value]
+                    [e] then
+                        [e] write-pattern
+                            [v] import-date
+                [e] if
+                    [v] attributes/attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] then
+                        [e] write-pattern
+                            [v] import-dateTime
+                [e] apply-templates
+                    [e] select
+                        [v] distinct-values(attributes/attribute[@mode != 'directToField']/@type)
+                    [e] parameters
+                        [e] inPackage
+                            [e] expr
+                                [v] @package
+                    [e] mode
+                        [v] imports
+            [g] class
+                [g] init
+                    [e] write-pattern
+                        [v] class-start
+                [g] body
+                    [g] attributes
+                        [e] apply-templates
+                            [e] select
+                                [v] attributes/attribute
+                            [e] mode
+                                [v] attributes
+                    [g] constructors
+                        [e] apply-templates
+                            [e] select
+                                [v] attributes
+                            [e] mode
+                                [v] constructors
+                    [g] functions
+                        [e] apply-templates
+                            [e] select
+                                [v] attributes
+                            [e] mode
+                                [v] builder
+                        [e] write-pattern
+                            [v] accessorSystemFields
+                        [e] apply-templates
+                            [e] select
+                                [v] attributes/attribute
+                            [e] mode
+                                [v] accessors
+                [g] end
+                    [e] write-pattern
+                        [v] class-close
+    [e] templates
+        [e] mode
+            [v] imports
+            [e] template
+                [e] match
+                    [v] .
+                [e] parameters
+                    [e] inPackage
+                        [v] NOT_DEFINED
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] pacote
+                            [e] expr
+                                [v] substring-before(.,'.')
+                        [e] var
+                            [v] tipo
+                            [e] expr
+                                [v] substring-after(.,'.')
+                        [e] var
+                            [v] class
+                            [e] expr
+                                [v] $classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                    [e] if
+                        [v] $class/@package != $inPackage
+                        [e] then
+                            [e] write-pattern
+                                [v] import
+        [e] mode
+            [v] attributes
+            [e] template
+                [e] match
+                    [v] attribute[@type != $mapNativeTypes/*/value]
+                [e] body
+                    [e] vars
+                        [e] var
+                            [v] pacote
+                            [e] expr
+                                [v] substring-before(@type,'.')
+                        [e] var
+                            [v] tipo
+                            [e] expr
+                                [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                        [e] var
+                            [v] class
+                            [e] expr
+                                [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                    [e] if
+                        [v] contains(@mode,'oneToMany')
+                        [e] then
+                            [e] write-pattern
+                                [v] attributeCollection
+                        [e] else-if
+                            [v] @mode = 'directMap'
+                            [e] then
+                                [e] write-pattern
+                                    [v] attribute-directMap
+                        [e] else-if
+                            [v] @mode = 'oneToOne'
+                            [e] then
+                                [g] annotation
+                                    [e] write-pattern
+                                        [v] annotation-oneToOne-inicio
+                                    [g] fetch
+                                        [e] if
+                                            [v] properties/fetch/value = "EAGER"
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] annotation-fetch-eager
+                                            [e] else
+                                                [e] write-pattern
+                                                    [v] annotation-fetch-padrao
+                                    [e] write-pattern
+                                        [v] annotation-oneToOne-fim
+                                [e] write-pattern
+                                    [v] attribute-oneToOne
+                        [e] else-if
+                            [v] @mode = 'manyToOne'
+                            [e] then
+                                [g] annotation
+                                    [e] write-pattern
+                                        [v] annotation-manyToOne-inicio
+                                    [g] fetch
+                                        [e] if
+                                            [v] properties/fetch/value = "EAGER"
+                                            [e] then
+                                                [e] write-pattern
+                                                    [v] annotation-fetch-eager
+                                            [e] else
+                                                [e] write-pattern
+                                                    [v] annotation-fetch-padrao
+                                    [e] write-pattern
+                                        [v] annotation-manyToOne-fim
+                                [e] write-pattern
+                                    [v] attribute-manyToOne
+                        [e] else-if
+                            [v] @mode = 'composite'
+                            [e] then
+                                [e] write-pattern
+                                    [v] attributeComposite
+                        [e] else
+                            [e] apply-templates
+                                [e] select
+                                    [v] .
+                                [e] parameters
+                                    [e] nomeTODO
+                                        [v] ATTRIBUTES
+                                [e] mode
+                                    [v] assignTODO
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Date/value]
+                [e] body
+                    [e] write-pattern
+                        [v] attributeDate
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                [e] body
+                    [e] write-pattern
+                        [v] attributeDateTime
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/String/value or @type = $mapNativeTypes/BigString/value]
+                [e] body
+                    [e] if
+                        [v] @name = 'id'
+                        [e] then
+                            [e] write-pattern
+                                [v] attributeIdUuid
+                        [e] else
+                            [e] write-pattern
+                                [v] quebraLinha
+                            [g] annotation
+                                [e] write-pattern
+                                    [v] annotationColumn-inicio
+                                [e] if
+                                    [v] @type = $mapNativeTypes/BigString/value or (exists(@typeParameter) and number(@typeParameter) > 65535)
+                                    [e] then
+                                        [e] write-pattern
+                                            [v] annotationColumn-columnDefinition
+                                    [e] else-if
+                                        [v] exists(@typeParameter)
+                                        [e] then
+                                            [e] write-pattern
+                                                [v] annotationColumn-length
+                                [e] write-pattern
+                                    [v] annotationColumn-fim
+                            [e] write-pattern
+                                [v] attributeString
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Binary/value]
+                [e] body
+                    [e] write-pattern
+                        [v] attributeBinary
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Integer/value]
+                [e] body
+                    [e] write-pattern
+                        [v] quebraLinha
+                    [g] annotation
+                        [e] write-pattern
+                            [v] annotationColumn-inicio
+                        [e] if
+                            [v] exists(@typeParameter)
+                            [e] then
+                                [e] write-pattern
+                                    [v] annotationColumn-precision
+                        [e] write-pattern
+                            [v] annotationColumn-fim
+                    [e] write-pattern
+                        [v] attributeInteger
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Long/value]
+                [e] body
+                    [e] write-pattern
+                        [v] attributeLong
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Double/value]
+                [e] body
+                    [e] write-pattern
+                        [v] quebraLinha
+                    [g] annotation
+                        [e] write-pattern
+                            [v] annotationColumn-inicio
+                        [e] if
+                            [v] exists(@typeParameter)
+                            [e] then
+                                [e] write-pattern
+                                    [v] annotationColumn-precision
+                        [e] write-pattern
+                            [v] annotationColumn-fim
+                    [e] write-pattern
+                        [v] attributeDouble
+            [e] template
+                [e] match
+                    [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                [e] body
+                    [e] write-pattern
+                        [v] attributeBoolean
+        [g] Constructor
+            [e] mode
+                [v] constructors
+                [e] template
+                    [e] match
+                        [v] attributes
+                    [e] body
+                        [g] Constructor
+                            [e] write-pattern
+                                [v] defaultConstructor-start
+                            [e] write-pattern
+                                [v] defaultConstructor-close
+                        [g] ConstructorArgs
+                            [e] write-pattern
+                                [v] allArgsConstructor-start
+                            [e] apply-templates
+                                [e] select
+                                    [v] attribute
+                                [e] mode
+                                    [v] allArgsConstructor-params
+                            [e] write-pattern
+                                [v] allArgsConstructor-closeParams
+                            [e] apply-templates
+                                [e] select
+                                    [v] attribute
+                                [e] mode
+                                    [v] allArgsConstructor-body
+                            [e] write-pattern
+                                [v] allArgsConstructor-close
+            [e] mode
+                [v] allArgsConstructor-params
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] contains(@mode,'oneToMany')
+                            [e] then
+                                [e] write-pattern
+                                    [v] allArgsConstructor-paramAnyTypeCollection
+                            [e] else-if
+                                [v] @mode = 'directMap'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] allArgsConstructor-paramAnyTypeMap
+                            [e] else-if
+                                [v] @mode = 'oneToOne'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] allArgsConstructor-paramAnyType
+                            [e] else-if
+                                [v] @mode = 'manyToOne'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] allArgsConstructor-paramAnyType
+                            [e] else-if
+                                [v] @mode = 'composite'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] allArgsConstructor-paramComposite
+                            [e] else
+                                [e] apply-templates
+                                    [e] select
+                                        [v] .
+                                    [e] parameters
+                                        [e] nomeTODO
+                                            [v] ALL_ARGS_CONSTRUCTOR-PARAMS
+                                    [e] mode
+                                        [v] assignTODO
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramDate
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramDateTime
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value or @type = $mapNativeTypes/BigString/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramString
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Binary/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramBinary
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramInteger
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramLong
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramDouble
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-paramBoolean
+            [e] mode
+                [v] allArgsConstructor-body
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] contains(@mode,'oneToMany')
+                            [e] then
+                                [e] write-pattern
+                                    [v] allArgsConstructor-bodyAnyTypeCollection
+                            [e] else-if
+                                [v] @mode = 'directMap'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] allArgsConstructor-bodyAnyTypeMap
+                            [e] else
+                                [e] write-pattern
+                                    [v] allArgsConstructor-bodyAnyType
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyDate
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyDateTime
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyString
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyInteger
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyLong
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyDouble
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] allArgsConstructor-bodyBoolean
+        [g] functions
+            [e] mode
+                [v] accessors
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] contains(@mode,'oneToMany')
+                            [e] then
+                                [e] write-pattern
+                                    [v] accessorAnyTypeCollection
+                            [e] else-if
+                                [v] @mode = 'directMap'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] accessorAnyTypeMap
+                            [e] else-if
+                                [v] @mode = 'oneToOne'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] accessorAnyType
+                            [e] else-if
+                                [v] @mode = 'manyToOne'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] accessorAnyType
+                            [e] else-if
+                                [v] @mode = 'composite'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] accessorComposite
+                            [e] else
+                                [e] apply-templates
+                                    [e] select
+                                        [v] .
+                                    [e] parameters
+                                        [e] nomeTODO
+                                            [v] ACCESSORS
+                                    [e] mode
+                                        [v] assignTODO
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorDate
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorDateTime
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value or @type = $mapNativeTypes/BigString/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorString
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Binary/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorBinary
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorInteger
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorLong
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorDouble
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] accessorBoolean
+            [e] mode
+                [v] builder
+                [e] template
+                    [e] match
+                        [v] attributes
+                    [e] body
+                        [e] write-pattern
+                            [v] builderConstructor-start
+                        [e] apply-templates
+                            [e] select
+                                [v] attribute
+                            [e] mode
+                                [v] builderConstructor-body
+                        [e] write-pattern
+                            [v] builderConstructor-close
+                        [e] write-pattern
+                            [v] builderOfNoArgs
+            [e] mode
+                [v] builderConstructor-body
+                [e] template
+                    [e] match
+                        [v] attribute[@type != $mapNativeTypes/*/value]
+                    [e] body
+                        [e] vars
+                            [e] var
+                                [v] pacote
+                                [e] expr
+                                    [v] substring-before(@type,'.')
+                            [e] var
+                                [v] tipo
+                                [e] expr
+                                    [v] mi:if-else(contains(@type,'.'), substring-after(@type,'.'), @type)
+                            [e] var
+                                [v] class
+                                [e] expr
+                                    [v] /classes/class[@name = $tipo and ends-with(@package,$pacote)]
+                        [e] if
+                            [v] contains(@mode,'oneToMany')
+                            [e] then
+                                [e] write-pattern
+                                    [v] builderConstructor-bodyAnyTypeCollection
+                            [e] else-if
+                                [v] @mode = 'directMap'
+                                [e] then
+                                    [e] write-pattern
+                                        [v] builderConstructor-bodyAnyTypeMap
+                            [e] else
+                                [e] write-pattern
+                                    [v] builderConstructor-bodyAnyType
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Date/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] builderConstructor-bodyDate
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/DateTime/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] builderConstructor-bodyDateTime
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/String/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] builderConstructor-bodyString
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Integer/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] builderConstructor-bodyInteger
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Long/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] builderConstructor-bodyLong
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Double/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] builderConstructor-bodyDouble
+                [e] template
+                    [e] match
+                        [v] attribute[@type = $mapNativeTypes/Boolean/value]
+                    [e] body
+                        [e] write-pattern
+                            [v] builderConstructor-bodyBoolean
+        [g] @TODO
+            [e] mode
+                [v] assignTODO
+                [e] template
+                    [e] match
+                        [v] *
+                    [e] parameters
+                        [e] nomeTODO
+                            [v] NOT_DEFINED
+                    [e] body
+                        [e] write-pattern
+                            [v] declaraTODO
+                        [e] write-pattern
+                            [v] start-labelEstruturaXpath
+                        [e] write-pattern
+                            [v] declara-contadorElementosFilhos
+                        [e] write-pattern
+                            [v] declara-andEspacoEmBranco
+                        [e] write-pattern
+                            [v] declara-nomeDoElemento
+                        [e] if
+                            [v] count(./*)>0
+                            [e] then
+                                [e] write-pattern
+                                    [v] declara-andEspacoEmBranco
+                                [e] apply-templates
+                                    [e] select
+                                        [v] ./*
+                                    [e] parameters
+                                        [e] prefixoNome
+                                            [e] expr
+                                                [v] ''
+                                    [e] mode
+                                        [v] estruturaXpath
+                        [e] write-pattern
+                            [v] end-labelEstruturaXpath
+                        [e] write-pattern
+                            [v] quebraLinha
+            [e] mode
+                [v] estruturaXpath
+                [e] template
+                    [e] match
+                        [v] *
+                    [e] parameters
+                        [e] prefixoNome
+                            [v] NOT_DEFINED
+                    [e] body
+                        [e] if
+                            [v] $prefixoNome != ''
+                            [e] then
+                                [e] write-pattern
+                                    [v] declara-prefixoName
+                        [e] write-pattern
+                            [v] declara-clausulaPositionName
+                        [e] if
+                            [v] .[count(*)=0 and text()]
+                            [e] then
+                                [e] write-pattern
+                                    [v] start-clausulaContZeroText
+                                [e] write-pattern
+                                    [v] declara-clausulaText
+                                [e] write-pattern
+                                    [v] end-clausulaContZeroText
+                            [e] else-if
+                                [v] .[count(*)=0 and not(text())]
+                                [e] then
+                                    [e] write-pattern
+                                        [v] start-clausulaContZeroText
+                                    [e] write-pattern
+                                        [v] declara-clausulaNotTextName
+                                    [e] write-pattern
+                                        [v] end-clausulaContZeroText
+                            [e] else
+                                [e] vars
+                                    [e] var
+                                        [v] valueNameTratar
+                                        [e] expr
+                                            [v] name()
+                                    [e] var
+                                        [v] valueName
+                                        [e] expr
+                                            [v] concat(concat($prefixoNome, $valueNameTratar), '/')
+                                [e] write-pattern
+                                    [v] declara-barra
+                                [e] write-pattern
+                                    [v] declara-contadorElementosFilhos
+                                [e] write-pattern
+                                    [v] declara-andEspacoEmBranco
+                                [e] apply-templates
+                                    [e] select
+                                        [v] ./*
+                                    [e] parameters
+                                        [e] prefixoNome
+                                            [e] expr
+                                                [v] $valueName
+                                    [e] mode
+                                        [v] estruturaXpath
+                        [e] if
+                            [v] position() != last()
+                            [e] then
+                                [e] write-pattern
+                                    [v] declara-andEspacoEmBranco

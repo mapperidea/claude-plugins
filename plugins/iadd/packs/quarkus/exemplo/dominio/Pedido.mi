@@ -1,0 +1,153 @@
+[b] Pedido
+    @
+        [e] title
+            [e] pt
+                [v] Pedido
+            [e] en
+                [v] Order
+        [e] description
+            [e] pt
+                [v] Entidade de prova do exemplo. Carrega escalar obrigatório e opcional,
+                  | enum, data, monetário, relação fraca [o] e referência [r].
+            [e] en
+                [v] The example's test entity. Carries required and optional scalars,
+                  | enum, date, money, weak relation [o] and reference [r].
+    [g] identificacao
+        [d] id: Texto(36)
+            @
+                [e] cn
+                    [v] id
+                [e] title
+                    [e] pt
+                        [v] Identificador
+                    [e] en
+                        [v] Identifier
+                [e] required
+                    [v] true
+        [d] numero: Texto(20)
+            @
+                [e] cn
+                    [v] numero
+                [e] title
+                    [e] pt
+                        [v] Número do pedido
+                    [e] en
+                        [v] Order number
+                [e] required
+                    [v] true
+                [e] searchable
+                    [v] true
+        [d] observacao: TextoLongo()
+            @
+                [e] cn
+                    [v] observacao
+                [e] title
+                    [e] pt
+                        [v] Observação
+                    [e] en
+                        [v] Note
+    [g] valores
+        [d] total: ValorMonetario()
+            @
+                [e] cn
+                    [v] total
+                [e] title
+                    [e] pt
+                        [v] Valor total
+                    [e] en
+                        [v] Total amount
+                [e] required
+                    [v] true
+                [e] defaultValue
+                    [v] 0.0
+    [g] status
+        [d] situacao: Texto(20)
+            @
+                [e] cn
+                    [v] situacao
+                [e] title
+                    [e] pt
+                        [v] Situação
+                    [e] en
+                        [v] Status
+                [e] required
+                    [v] true
+                [e] defaultValue
+                    [v] RASCUNHO
+                [e] values
+                    [e] RASCUNHO
+                        [e] title
+                            [e] pt
+                                [v] Rascunho
+                            [e] en
+                                [v] Draft
+                    [e] CONFIRMADO
+                        [e] title
+                            [e] pt
+                                [v] Confirmado
+                            [e] en
+                                [v] Confirmed
+                    [e] CANCELADO
+                        [e] title
+                            [e] pt
+                                [v] Cancelado
+                            [e] en
+                                [v] Cancelled
+    [g] datas
+        [d] dataEmissao: Data()
+            @
+                [e] cn
+                    [v] data_emissao
+                [e] title
+                    [e] pt
+                        [v] Data de emissão
+                    [e] en
+                        [v] Issue date
+                [e] required
+                    [v] true
+    [g] controle
+        [d] ativo: Boolean()
+            @
+                [e] cn
+                    [v] ativo
+                [e] title
+                    [e] pt
+                        [v] Ativo
+                    [e] en
+                        [v] Active
+                [e] defaultValue
+                    [v] true
+        [d] dataCriacao: DataHora()
+            @
+                [e] cn
+                    [v] data_criacao
+                [e] title
+                    [e] pt
+                        [v] Data de criação
+                    [e] en
+                        [v] Created at
+                [e] readOnly
+                    [v] true
+    [g] relacionamentos
+        [r] cliente: Cliente()
+            @
+                [e] cn
+                    [v] cliente_id
+                [e] title
+                    [e] pt
+                        [v] Cliente
+                    [e] en
+                        [v] Customer
+                [e] required
+                    [v] true
+                [e] fetch
+                    [v] EAGER
+        [o] itens: ItemPedido()
+            @
+                [e] title
+                    [e] pt
+                        [v] Itens
+                    [e] en
+                        [v] Items
+                [e] apiRelation
+                    [v] EMBEDDED

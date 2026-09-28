@@ -1,0 +1,68 @@
+[e] apiClient
+    [e] parameters
+        [e] modelName
+            [v] NOT_DEFINED
+        [e] package
+            [v] NOT_DEFINED
+    [e] patterns
+        [e] file
+            [v] // GERADO por: mi generate <projeto> frontend apiClient modelName={{ @name }}
+            [v] // Fonte: mapa de dominio {{ @name }}. NAO editar a mao — rode o gerador.
+            [v] import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+            [v] import { api } from "@/lib/api"
+            [v] import type { {{ @name }} } from "@/gen/schemas/{{ mi:first-lower(@name) }}"
+            [v]
+            [v] /** Payload de criacao/edicao (parcial — o form define os campos obrigatorios via zod; backend preenche o resto). */
+            [v] export type {{ @name }}Input = Partial<Omit<{{ @name }}, "id">>
+            [v]
+            [v] const RESOURCE = "/{{ concat(mi:first-lower(@name),'s') }}"
+            [v]
+            [v] export const {{ mi:first-lower(@name) }}Keys = {
+            [v]   all: ["{{ concat(mi:first-lower(@name),'s') }}"] as const,
+            [v]   list: () => [...{{ mi:first-lower(@name) }}Keys.all, "list"] as const,
+            [v]   detail: (id: string) => [...{{ mi:first-lower(@name) }}Keys.all, "detail", id] as const,
+            [v] }
+            [v]
+            [v] export function use{{ @name }}s() {
+            [v]   return useQuery({ queryKey: {{ mi:first-lower(@name) }}Keys.list(), queryFn: () => api<{{ @name }}[]>(RESOURCE) })
+            [v] }
+            [v]
+            [v] export function use{{ @name }}(id: string) {
+            [v]   return useQuery({
+            [v]     queryKey: {{ mi:first-lower(@name) }}Keys.detail(id),
+            [v]     queryFn: () => api<{{ @name }}>(RESOURCE + "/" + id),
+            [v]     enabled: Boolean(id),
+            [v]   })
+            [v] }
+            [v]
+            [v] export function useCriar{{ @name }}() {
+            [v]   const qc = useQueryClient()
+            [v]   return useMutation({
+            [v]     mutationFn: (input: {{ @name }}Input) =>
+            [v]       api<{{ @name }}>(RESOURCE, { method: "POST", body: JSON.stringify(input) }),
+            [v]     onSuccess: () => qc.invalidateQueries({ queryKey: {{ mi:first-lower(@name) }}Keys.all }),
+            [v]   })
+            [v] }
+            [v]
+            [v] export function useAtualizar{{ @name }}() {
+            [v]   const qc = useQueryClient()
+            [v]   return useMutation({
+            [v]     mutationFn: (args: { id: string; input: {{ @name }}Input }) =>
+            [v]       api<{{ @name }}>(RESOURCE + "/" + args.id, { method: "PUT", body: JSON.stringify(args.input) }),
+            [v]     onSuccess: () => qc.invalidateQueries({ queryKey: {{ mi:first-lower(@name) }}Keys.all }),
+            [v]   })
+            [v] }
+            [v]
+            [v] export function useRemover{{ @name }}() {
+            [v]   const qc = useQueryClient()
+            [v]   return useMutation({
+            [v]     mutationFn: (id: string) => api<void>(RESOURCE + "/" + id, { method: "DELETE" }),
+            [v]     onSuccess: () => qc.invalidateQueries({ queryKey: {{ mi:first-lower(@name) }}Keys.all }),
+            [v]   })
+            [v] }
+    [e] start
+        [e] match
+            [v] /classes/class[@name = $modelName and @package = $package]
+        [e] body
+            [e] write-pattern
+                [v] file
