@@ -1,0 +1,123 @@
+[e] struct
+    [e] xml
+        [e] parameters
+            [e] className
+                [v] NOT_DEFINED
+            [e] packageName
+                [v] NOT_DEFINED
+        [e] vars
+            [e] var
+                [v] identChar
+                [e] expr
+                    [v] ' '
+            [e] var
+                [v] identSize
+                [e] expr
+                    [v] 2
+        [e] patterns
+            [e] start-open-element
+                [y] {{ mi:replicate($identChar,xs:integer($level * $identSize)) }} <{{ name(.) }}
+            [e] start-close-element
+                [v] >
+            [e] end-element
+                [v] {{ mi:replicate($identChar,xs:integer($level * $identSize)) }} </{{ name(.) }}>
+            [e] attributeOfElement
+                [y]  {{ name(.)  }}="{{ . }}"
+            [e] valueText
+                [v] {{ mi:replicate($identChar,xs:integer($level * $identSize)) }} {{ replace(.,  '&', '&amp;') }}
+        [e] start
+            [e] match
+                [v] /
+            [e] body
+                [e] if
+                    [v] $packageName = 'NOT_DEFINED'
+                    [e] then
+                        [e] apply-templates
+                            [e] select
+                                [v] /classes/class[@name=$className]
+                            [e] parameters
+                                [e] level
+                                    [v] 0
+                            [e] mode
+                                [v] all
+                [e] if
+                    [v] $packageName != 'NOT_DEFINED'
+                    [e] then
+                        [e] apply-templates
+                            [e] select
+                                [v] /classes/class[@name=$className and @package = $packageName]
+                            [e] parameters
+                                [e] level
+                                    [v] 0
+                            [e] mode
+                                [v] all
+        [e] templates
+            [e] mode
+                [v] all
+                [e] template
+                    [e] match
+                        [v] *
+                    [e] parameters
+                        [e] level
+                            [v] 0
+                    [e] body
+                        [e] write-pattern
+                            [v] start-open-element
+                        [e] apply-templates
+                            [e] select
+                                [v] attribute(*)
+                            [e] parameters
+                                [e] level
+                                    [e] expr
+                                        [v] $level + 1
+                        [e] write-pattern
+                            [v] start-close-element
+                        [e] apply-templates
+                            [e] parameters
+                                [e] level
+                                    [e] expr
+                                        [v] $level + 1
+                        [e] write-pattern
+                            [v] end-element
+                [e] template
+                    [e] match
+                        [v] attribute(*)
+                    [e] parameters
+                        [e] level
+                            [v] 0
+                    [e] body
+                        [e] write-pattern
+                            [v] attributeOfElement
+                [e] template
+                    [e] match
+                        [v] value/text()
+                    [e] parameters
+                        [e] level
+                            [v] 0
+                    [e] body
+                        [e] write-pattern
+                            [v] valueText
+                [e] template
+                    [e] match
+                        [v] expr/text()
+                    [e] parameters
+                        [e] level
+                            [v] 0
+                    [e] body
+                        [e] write-pattern
+                            [v] valueText
+                [e] template
+                    [e] match
+                        [v] text()
+                    [e] parameters
+                        [e] level
+                            [v] 0
+                    [e] body
+                        //
+                            [e] if
+                                [v] ancestor::*:unit
+                                [e] then
+                                    [e] write-pattern
+                                        [v] valueText
+                        [e] write-pattern
+                            [v] valueText

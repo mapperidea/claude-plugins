@@ -8,14 +8,21 @@ O CLI tem dois nomes equivalentes: `mapperidea` (completo) e `mi` (abreviado). O
 
 ### 1. Inicializar projeto — `init`
 
-Executar **dentro da pasta onde estão os mapas**. Vincula um nome de projeto ao diretório:
+Executar **dentro da pasta do mapa principal**, passando só o nome do arquivo — não um caminho. A pasta
+atual vira a *home* do projeto: os caminhos `#` dos mapas são relativos a ela, e o `push` envia o que está
+dentro dela.
 
 ```bash
 cd /caminho/para/meu/projeto/mapas
-mapperidea init nome-do-projeto mapa.mm
+mapperidea init nome-do-projeto main.mi
 ```
 
-Após o `init`, todos os outros comandos podem ser executados de qualquer diretório usando o nome do projeto.
+Não rode de outra pasta apontando `sub/main.mi`: a home registrada fica errada e os caminhos `#` se
+perdem.
+
+Após o `init`, o registro é global pelo nome do projeto: todos os outros comandos rodam de qualquer
+diretório. Por isso um projeto de código pode gerar a partir de vários projetos Mapper Idea, cada um na sua
+pasta — e o código gerado não precisa ir junto com os mapas e geradores que o produziram.
 
 ### 2. Push — `push` / `p`
 
@@ -52,8 +59,9 @@ do vocabulário é descartada sem aviso. Quem mostra isso é o `struct`:
 mi g nome-do-projeto struct xml className=Pedido packageName=com.exemplo.dominio > /tmp/pedido.xml
 ```
 
-O `struct` vem no pack padrão — existe em todo projeto — e despeja a forma normalizada da classe. Rodá-lo
-completo é a validação de referência do mapa.
+O `struct` vem no pack padrão e despeja a forma normalizada da classe; rodá-lo completo é a validação de
+referência do mapa. É um gerador como os outros: precisa estar **registrado no `main.mi`**
+(`generators/struct`) — sem registro, a saída sai vazia e sem erro, e parece que a classe não existe.
 
 ### 4. Gerar código — `generate` / `g`
 
@@ -163,7 +171,7 @@ Quando solicitado a criar um script de geração, use este modelo como base, ada
 
 | Completo | Abreviado | Descrição |
 |----------|-----------|-----------|
-| `mapperidea init <projeto> <mapa.mm>` | — | Inicializa projeto na pasta atual |
+| `mapperidea init <projeto> <mapa>` | `mi i <projeto> <mapa>` | Registra o projeto com a pasta atual como home — rode na pasta do mapa principal |
 | `mapperidea push <projeto>` | `mi p <projeto>` | Sobe todos os mapas do projeto — não valida |
 | `mapperidea check <projeto>` | `mi k <projeto>` | Confere que o envio chegou inteiro e acessível |
 | `mapperidea load <projeto>` | `mi l <projeto>` | Lê os mapas e monta o DOM — o mapa é legível? |

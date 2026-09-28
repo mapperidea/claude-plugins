@@ -64,6 +64,9 @@
                     [v] nome
                     [v] razaoSocial
             [e] generators
+                [e] struct
+                    #
+                        struct.mi
                 [e] quarkus
                     [e] domain
                         #

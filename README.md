@@ -149,10 +149,15 @@ delega ao agente certo. A separação existe para que quem modela não gere, e q
 ### O ciclo
 
 ```sh
-cd mi/ && mi init <projeto> main.mi      # uma vez: vincula o projeto à pasta do mapa principal
+cd mi/ && mi init <projeto> main.mi      # uma vez, DENTRO da pasta do mapa principal
 mi push <projeto>                        # a cada alteração de qualquer .mi — envia, não valida
 mi generate <projeto> <grupo> <sub> modelName=<Classe> package=<pacote> > <destino>
 ```
+
+O `init` precisa rodar **na pasta do mapa principal**, com só o nome do arquivo: essa pasta vira a base
+dos caminhos entre mapas. Depois dele o projeto fica registrado pelo nome, e o resto roda de qualquer
+pasta — então um mesmo projeto de código pode gerar a partir de vários projetos Mapper Idea, e os mapas não
+precisam ir junto com o código gerado.
 
 O `push` só leva os mapas para a nuvem; é lá que tudo acontece, então ele vem antes de qualquer outro
 comando. **Quem valida é a geração**, e o CLI tem uma escada para achar onde está o erro:

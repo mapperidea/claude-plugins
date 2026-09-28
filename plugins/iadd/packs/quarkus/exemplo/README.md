@@ -4,7 +4,7 @@ O mapa mínimo, **fora de qualquer domínio real**, cujo `generate` produz uma p
 **compila**. É a prova de que o pack funciona fora do projeto que o gerou — e o tutorial de entrada.
 
 ```
-exemplo/main.mi                 config/maps + registro dos 7 sub-geradores + CurrentSchema
+main.mi                         (na raiz do pack) config/maps + registro dos 7 sub-geradores + CurrentSchema
 exemplo/dominio/Cliente.mi      referenciado por Pedido ([r])
 exemplo/dominio/Fornecedor.mi   referenciado por ItemPedido ([r]); carrega Long e Binary
 exemplo/dominio/Pedido.mi       a entidade de prova: enum, datas, monetário, [r] e [o]
@@ -34,14 +34,17 @@ repository passa a importar `com.exemplo.tenant.EscopoTenant` e a chamar `boolea
 
 ## Como rodar
 
-**Rode a partir da pasta do pack, não de `exemplo/`.** Os caminhos `#` de um mapa são relativos à pasta
-onde se fez o `mi init` (a *home* do projeto), e o `mi push` só envia o que está dentro dela — por isso o
-`main.mi` aponta `quarkus-domain.mi` e `exemplo/dominio/Pedido.mi`, e por isso `../` não funciona.
+**O `mi init` roda na pasta do `main.mi`**, e o `main.mi` do exemplo fica na raiz do pack, não em
+`exemplo/`. A pasta onde se roda o `init` vira a *home* do projeto: os caminhos `#` são relativos a ela, e
+o `mi push` só envia o que está dentro dela. Como o exemplo usa os geradores do pack, a home tem de ser a
+pasta do pack — por isso o `main.mi` mora ali, aponta `quarkus-domain.mi` e `exemplo/dominio/Pedido.mi`, e
+por isso `../` não funciona.
 
 ```sh
 cd plugins/iadd/packs/quarkus
-mi init exemplo-quarkus exemplo/main.mi     # uma vez; o nome do projeto é sugestão
+mi init exemplo-quarkus main.mi             # uma vez; o nome do projeto é sugestão
 mi push exemplo-quarkus                     # publica na sua conta — envia, não valida
+mi generate exemplo-quarkus struct xml className=Pedido packageName=com.exemplo.domain.loja   # valida o mapa
 
 mi generate exemplo-quarkus quarkus domain modelName=Pedido package=com.exemplo.domain.loja
 ```

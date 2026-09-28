@@ -58,6 +58,8 @@ export HOME="$MIHOME" PATH="$PATH:$MIHOME/bin"
   redirecionando para arquivo, e confirmar que atributos, enums e relacionamentos entraram na árvore.
 - **Depurar geradores** contra o DOM real: confirmar que o `match` casa o nó certo; localizar o caminho
   real de um atributo que um gerador "não pega".
+- **Rodar o `init` na pasta do mapa principal**, com o nome do arquivo e não um caminho: a pasta atual vira
+  a home do projeto, e os caminhos `#` são relativos a ela. Depois dele, tudo roda de qualquer diretório.
 - **Respeitar a cadência**: `init` (uma vez) → `push` (a cada alteração de qualquer `.mi`) → validação e
   `generate` (N vezes). Sempre `push` antes de qualquer outro comando depois de editar — sem ele, você
   valida o mapa de antes.

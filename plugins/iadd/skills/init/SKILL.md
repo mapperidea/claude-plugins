@@ -234,7 +234,7 @@ agora** — que normalmente é uma destas duas:
   `cli-runner`, não seu:
 
   ```sh
-  cd <pasta dos mapas> && mi init <projeto> <mapa principal>   # uma vez
+  cd <pasta do mapa principal> && mi init <projeto> <arquivo>  # uma vez; só o nome do arquivo, não caminho
   mi push <projeto>                                            # envia; não valida
   mi generate <projeto> struct xml className=<C> packageName=<p>   # confira o @mode
   ```

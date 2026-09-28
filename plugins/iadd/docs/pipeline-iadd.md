@@ -167,7 +167,15 @@ mi push <projeto>                        # a CADA alteração de qualquer .mi (n
 mi generate <projeto> <grupo> <sub> modelName=<Classe> package=<pkg> > <destino>   # N vezes
 ```
 
-Depois do `init`, tudo roda de qualquer diretório — a referência é o **nome do projeto**.
+**O `init` roda dentro da pasta do mapa principal**, e o segundo argumento é só o nome do arquivo — não
+um caminho. A pasta onde ele roda vira a *home* do projeto: os caminhos `#` dos mapas são relativos a ela,
+e o `push` envia o que está dentro dela. `mi init <projeto> sub/main.mi` rodado da pasta de cima registra
+uma home diferente da que os mapas esperam, e o projeto se perde.
+
+Depois do `init`, o registro é **global, pelo nome do projeto**: tudo roda de qualquer diretório. É isso
+que deixa mapas e código viverem separados — o projeto de código pode consumir mais de um projeto Mapper
+Idea, cada um na sua pasta, e o código gerado não precisa levar junto os mapas nem os geradores que o
+produziram.
 **Regra**: editou `.mi`, fez `push` antes de qualquer outro comando. Sem exceção — tudo o que vem depois
 acontece **no servidor**, sobre a última versão enviada; sem `push`, você valida e gera o mapa de antes.
 
@@ -341,7 +349,7 @@ Quarkus que assume o namespace do projeto de origem não é um pack de stack, é
 | **Mapa de Negócio** | `.mi` que descreve entidades e atributos em linguagem de negócio. Documento de domínio, legível por quem não programa. |
 | **Mapa de Arquitetura** | `.mi` que descreve um **gerador**: casa nós do DOM e emite texto. Dialeto XSLT-like. |
 | **DOM normalizado** | a árvore que o servidor monta a partir dos mapas enviados pelo `push` (o `load` para nela; todo `generate` passa por ela). Fonte de verdade da forma do dado. Não é idêntica ao `.mi`. |
-| **`struct`** | gerador do pack padrão — disponível em todo projeto — que despeja o DOM de uma classe em XML. O microscópio do método, e a validação de referência do mapa. |
+| **`struct`** | gerador do pack padrão que despeja o DOM de uma classe em XML. O microscópio do método, e a validação de referência do mapa. É um gerador como os outros: precisa estar **registrado no `main.mi`** — sem registro, `mi g … struct` sai vazio e sem erro. No kit: `packs/_exemplar/generators/struct.mi`. |
 | **pack** | conjunto de geradores de uma stack. Semente, não dependência. |
 | **seam** (`config`/`maps`) | o bloco do `main.mi` onde convenções e dicionários de tipo são declarados uma vez e lidos por todos os geradores. |
 | **ilha** | trecho de código escrito à mão que vive **fora** do caminho da geração, porque a saída é sobrescrita por inteiro. |

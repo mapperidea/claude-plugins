@@ -11,6 +11,7 @@ Sete geradores que emitem, por entidade, a pilha Java/Quarkus completa a partir 
 | `mapper` | a conversão domínio ↔ entidade, com mascaramento de dado pessoal |
 | `resource` | o recurso REST |
 | `swagger/restAPI` | o contrato OpenAPI do pacote inteiro |
+| `struct/xml` | não emite código: despeja o DOM de uma classe — cópia do `struct` do pack padrão, para validar o mapa |
 
 São **476 KB de geradores testados em produção** — e o valor principal deles, para você, provavelmente não
 é usá-los: é **lê-los**. Eles são a demonstração mais completa que existe de como observar o DOM, fazer
@@ -126,8 +127,8 @@ origem**: 24 arquivos Java + o OpenAPI, e `mvn clean compile` → `BUILD SUCCESS
 2026-09-25, mi 1.0.9, Java 17, Quarkus 3.15). Nenhum gerador foi editado para isso.
 
 ```sh
-cd plugins/iadd/packs/quarkus          # daqui, não de exemplo/: os caminhos # são relativos à home
-mi init exemplo-quarkus exemplo/main.mi
+cd plugins/iadd/packs/quarkus          # a pasta do main.mi: ela vira a home do projeto
+mi init exemplo-quarkus main.mi
 mi push exemplo-quarkus
 mi generate exemplo-quarkus quarkus entity modelName=Pedido package=com.exemplo.domain.loja
 ```

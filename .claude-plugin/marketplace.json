@@ -7,13 +7,13 @@
   "plugins": [
     {
       "name": "agent-kit",
-      "version": "0.3.2",
+      "version": "0.3.3",
       "source": "./plugins/agent-kit",
       "description": "Como se autora um agente Claude Code bom: wizard agent-creator, extrator de conhecimento, arquétipos e convenções de autoria. Serve a qualquer repositório."
     },
     {
       "name": "iadd",
-      "version": "0.3.2",
+      "version": "0.3.3",
       "source": "./plugins/iadd",
       "description": "IA Driven Development com Mapper Idea: o método escrito, a tríade de agentes, a skill de sintaxe .mi e os packs de geradores por stack."
     }
