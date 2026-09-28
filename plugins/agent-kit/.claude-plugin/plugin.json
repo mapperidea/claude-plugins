@@ -1,6 +1,6 @@
 {
   "name": "agent-kit",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Como se autora um agente Claude Code bom: wizard agent-creator, extrator de conhecimento de domínio, arquétipos de agente e as convenções de autoria. Independente de stack e de negócio.",
   "author": {
     "name": "Clovis Wichoski"
